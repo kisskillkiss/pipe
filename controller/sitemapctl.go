@@ -1,5 +1,5 @@
 // Pipe - A small and beautiful blogging platform written in golang.
-// Copyright (C) 2017-2018, b3log.org
+// Copyright (C) 2017-present, b3log.org
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -23,12 +23,12 @@ import (
 )
 
 func outputSitemapAction(c *gin.Context) {
-	sm := stm.NewSitemap()
+	sm := stm.NewSitemap(1)
 	sm.Create()
 
 	blogs := service.User.GetTopBlogs(10)
 	for _, blog := range blogs {
-		sm.Add(stm.URL{"loc": blog.URL})
+		sm.Add(stm.URL{{"loc", blog.URL}})
 	}
 
 	c.Writer.Write(sm.XMLContent())

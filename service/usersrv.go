@@ -1,5 +1,5 @@
 // Pipe - A small and beautiful blogging platform written in golang.
-// Copyright (C) 2017-2018, b3log.org
+// Copyright (C) 2017-present, b3log.org
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -38,6 +38,15 @@ const (
 	adminConsoleUserListPageSize   = 15
 	adminConsoleUserListWindowSize = 20
 )
+
+func (srv *userService) GetUserByGitHubId(githubId string) *model.User {
+	ret := &model.User{}
+	if err := db.Where("`github_id` = ?", githubId).First(ret).Error; nil != err {
+		return nil
+	}
+
+	return ret
+}
 
 func (srv *userService) GetBlogAdmin(blogID uint64) *model.User {
 	rel := &model.Correlation{}

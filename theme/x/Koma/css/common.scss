@@ -1,17 +1,12 @@
 /**
- * skin Koma style
+ * skin style
  *
  * @author <a href="http://vanessa.b3log.org">Liyuan Li</a>
- * @version 0.1.0.0, Dec 18, 2017
+ * @version 0.2.1.1, Sep 9, 2018
 */
-@import '../../../scss/basic';
-@import '../../../scss/github';
 
-// variable
-$text-color: rgba(0, 0, 0, .6);
-$text-hover-color: #b0a0aa;
-$transition: all .3s ease;
-$blue: #88acdb;
+@import 'variables';
+@import '../../../scss/basic';
 
 // reset
 html {
@@ -25,12 +20,6 @@ body {
   letter-spacing: 0.01rem;
   line-height: 1.75em;
   text-rendering: geometricPrecision;
-}
-
-.pipe-content__reset {
-  pre > code {
-    background-image: url(../../../images/code-bg.png);
-  }
 }
 
 a {
@@ -309,6 +298,7 @@ a {
     height: 180px;
     display: block;
     @include image-bg('../../../images/image-bg.svg');
+    font-size: 0;
   }
 
   &__footer {
@@ -317,14 +307,14 @@ a {
     padding-top: 15px;
     position: relative;
 
-    .fn-left svg {
+    .fn__left svg {
       float: left;
       margin: 6px 15px 0 0;
       height: 18px;
       width: 18px;
     }
 
-    .fn-right {
+    .fn__right {
       a {
         color: $text-hover-color;
         transition: $transition;
@@ -741,7 +731,7 @@ a {
     display: none;
   }
 
-  .side > .fn-none,
+  .side > .fn__none,
   .mobile--show {
     display: block;
   }
@@ -795,13 +785,13 @@ a {
     margin: 15px 20px;
   }
 
-  .article__footer > .fn-left,
-  .article__footer > .fn-right,
-  .footer .fn-right {
+  .article__footer > .fn__left,
+  .article__footer > .fn__right,
+  .footer .fn__right {
     float: none;
   }
 
-  .article__footer > .fn-right a {
+  .article__footer > .fn__right a {
     margin: 15px 15px 0 0;
     display: inline-block;
   }

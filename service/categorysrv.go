@@ -1,5 +1,5 @@
 // Pipe - A small and beautiful blogging platform written in golang.
-// Copyright (C) 2017-2018, b3log.org
+// Copyright (C) 2017-present, b3log.org
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -43,6 +43,40 @@ const (
 	adminConsoleCategoryListWindowSize = 20
 )
 
+func (srv *categoryService) GetCategoryArticleCount(categoryID, blogID uint64) (ret int) {
+	sql := `SELECT
+	count(
+		DISTINCT (b3_pipe_articles.id)
+	) AS c
+FROM
+	b3_pipe_articles,
+	b3_pipe_correlations
+WHERE
+	b3_pipe_articles.id = b3_pipe_correlations.id1
+AND b3_pipe_correlations.type = 1
+AND b3_pipe_articles.blog_id = ?
+AND b3_pipe_correlations.id2 IN (
+	SELECT
+		id2
+	FROM
+		b3_pipe_correlations
+	WHERE
+		b3_pipe_correlations.id1 = ?
+	AND b3_pipe_correlations.type = 0
+	AND b3_pipe_correlations.blog_id = ?
+)`
+	if rows, err := db.DB().Query(sql, blogID, categoryID, blogID); nil != err {
+		logger.Errorf("get category article count failed: " + err.Error())
+	} else {
+		rows.Next()
+		if err = rows.Scan(&ret); nil != err {
+			logger.Errorf("get category article count failed: " + err.Error())
+		}
+	}
+
+	return
+}
+
 func (srv *categoryService) GetCategoryByPath(path string, blogID uint64) *model.Category {
 	path = strings.TrimSpace(path)
 	if "" == path || util.IsReservedPath(path) {
@@ -68,10 +102,7 @@ func (srv *categoryService) UpdateCategory(category *model.Category) error {
 		return fmt.Errorf("not found category [id=%d] to update", category.ID)
 	}
 
-	tagStr, err := normalizeTagStr(category.Tags)
-	if nil != err {
-		return err
-	}
+	tagStr := normalizeTagStr(category.Tags)
 	category.Tags = tagStr
 
 	if err := normalizeCategoryPath(category); nil != err {
@@ -113,10 +144,7 @@ func (srv *categoryService) AddCategory(category *model.Category) error {
 	srv.mutex.Lock()
 	defer srv.mutex.Unlock()
 
-	tagStr, err := normalizeTagStr(category.Tags)
-	if nil != err {
-		return err
-	}
+	tagStr := normalizeTagStr(category.Tags)
 	category.Tags = tagStr
 
 	if err := normalizeCategoryPath(category); nil != err {
@@ -137,6 +165,14 @@ func (srv *categoryService) AddCategory(category *model.Category) error {
 	tx.Commit()
 
 	return nil
+}
+
+func (srv *categoryService) GetCategoriesByTag(tagTitle string, blogID uint64) (ret []*model.Category) {
+	if err := db.Where("`blog_id` = ? AND `tags` LIKE ?", blogID, tagTitle).Find(&ret).Error; nil != err {
+		logger.Errorf("get categories failed: " + err.Error())
+	}
+
+	return
 }
 
 func (srv *categoryService) ConsoleGetCategories(page int, blogID uint64) (ret []*model.Category, pagination *util.Pagination) {

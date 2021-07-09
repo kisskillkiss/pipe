@@ -1,5 +1,5 @@
 // Pipe - A small and beautiful blogging platform written in golang.
-// Copyright (C) 2017-2018, b3log.org
+// Copyright (C) 2017-present, b3log.org
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -112,10 +112,10 @@ func (srv *initService) initBlog(tx *gorm.DB, admin *model.User, blogID uint64) 
 	if err := init3rdStatistic(tx, blogID); nil != err {
 		return err
 	}
-	if err := initStatisticSettings(tx, blogID); nil != err {
+	if err := initAd(tx, blogID); nil != err {
 		return err
 	}
-	if err := initNavigation(tx, blogID); nil != err {
+	if err := initStatisticSettings(tx, blogID); nil != err {
 		return err
 	}
 	if err := helloWorld(tx, admin, blogID); nil != err {
@@ -207,28 +207,18 @@ func initBlogAdmin(tx *gorm.DB, admin *model.User, blogID uint64) error {
 	return nil
 }
 
-func initNavigation(tx *gorm.DB, blogID uint64) error {
-	navigation := &model.Navigation{
-		Title:      "黑客派",
-		URL:        util.HacPaiURL,
-		IconURL:    "https://static.hacpai.com/images/hacpai/logo@72.png",
-		OpenMethod: model.NavigationOpenMethodBlank,
-		Number:     0,
-		BlogID:     blogID,
-	}
-	if err := tx.Create(navigation).Error; nil != err {
-		return err
-	}
-
-	return nil
-}
-
 func helloWorld(tx *gorm.DB, admin *model.User, blogID uint64) error {
-	content := `![Hello](` + util.RandImage() + `?imageView2/1/w/960/h/520/interlace/1/q/100)
+	content := `![Hello](` + util.ImageSize(util.RandImage(), 768, 432) + `)
 
-欢迎使用 [Pipe](https://github.com/b3log/pipe) 博客平台。这是一篇自动生成的演示文章，编辑或者删除它，然后开始你的独立博客之旅！
+Pipe 博客平台已经初始化完毕，可在管理后台 - 设置 - 基础设置中调整更多细节。如果需要导入已有博客文章，请参考文档 [Hexo/Jekyll/Markdown 文件导入](https://hacpai.com/article/1498490209748)。
 
-Pipe 博客平台是一个开源项目，如果你觉得它很赞，请到[项目首页](https://github.com/b3log/pipe)给颗星鼓励一下！`
+另外，出于安全考虑请尽快完成如下操作：
+
+1. 使用 GitHub 账号登录[社区](https://hacpai.com)
+2. 在社区[个人设置 - B3](https://hacpai.com/settings/b3) 中更新 B3 Key
+3. 在 Pipe 管理后台 - 设置 - 账号中也进行同样的 B3 Key 更新
+
+最后，如果你觉得 Pipe 很赞，请到[项目主页](https://github.com/b3log/pipe)给颗星鼓励一下 :heart:`
 
 	now := time.Now()
 	article := &model.Article{
@@ -447,6 +437,13 @@ func initPreferenceSettings(tx *gorm.DB, blogID uint64) error {
 		BlogID:   blogID}).Error; nil != err {
 		return err
 	}
+	if err := tx.Create(&model.Setting{
+		Category: model.SettingCategoryPreference,
+		Name:     model.SettingNamePreferenceRecommendArticleListSize,
+		Value:    strconv.Itoa(model.SettingPreferenceRecommendArticleListSizeDefault),
+		BlogID:   blogID}).Error; nil != err {
+		return err
+	}
 
 	return nil
 }
@@ -525,6 +522,18 @@ func initStatisticSettings(tx *gorm.DB, blogID uint64) error {
 		Category: model.SettingCategoryStatistic,
 		Name:     model.SettingNameStatisticViewCount,
 		Value:    "0",
+		BlogID:   blogID}).Error; nil != err {
+		return err
+	}
+
+	return nil
+}
+
+func initAd(tx *gorm.DB, blogID uint64) error {
+	if err := tx.Create(&model.Setting{
+		Category: model.SettingCategoryAd,
+		Name:     model.SettingNameAdGoogleAdSenseArticleEmbed,
+		Value:    "",
 		BlogID:   blogID}).Error; nil != err {
 		return err
 	}

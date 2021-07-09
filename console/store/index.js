@@ -29,6 +29,9 @@ export const mutations = {
   setBodySide (state, data) {
     state.bodySide = data
   },
+  setLogout (state, data) {
+    state.role = data
+  },
   setStatus (state, data) {
     state.locale = data.locale
     state.version = data.version
@@ -67,7 +70,7 @@ export const mutations = {
 }
 
 export const actions = {
-  async nuxtClientInit ({commit, state}, {app}) {
+  async nuxtClientInit ({ commit, state }, { app }) {
     // TrimB3Id
     const search = location.search
     if (search.indexOf('b3id') > -1) {
@@ -75,7 +78,7 @@ export const actions = {
     }
 
     try {
-      const responseData = await vueAxios().get('/status')
+      const responseData = await vueAxios().get('/status?' + (new Date()).getTime())
       if (responseData) {
         if (app.i18n.messages[responseData.locale]) {
           app.i18n.locale = responseData.locale
@@ -94,7 +97,7 @@ export const actions = {
       app.i18n.setLocaleMessage(state.locale, message)
     }
   },
-  setLocaleMessage ({commit}, locale) {
+  setLocaleMessage ({ commit }, locale) {
     if (this.app.i18n.messages[locale]) {
       this.app.i18n.locale = locale
     } else {
@@ -103,7 +106,7 @@ export const actions = {
     }
     commit('setLocale', locale)
   },
-  async getTags ({commit, state}) {
+  async getTags ({ commit, state }) {
     if (state.tagsItems.length > 0) {
       return
     }

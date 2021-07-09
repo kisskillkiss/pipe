@@ -1,5 +1,5 @@
 // Pipe - A small and beautiful blogging platform written in golang.
-// Copyright (C) 2017-2018, b3log.org
+// Copyright (C) 2017-present, b3log.org
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/araddon/dateparse"
+	"github.com/b3log/gulu"
 	"github.com/b3log/pipe/model"
 	"github.com/b3log/pipe/util"
 	"gopkg.in/yaml.v2"
@@ -103,7 +104,7 @@ func (srv *importService) ImportMarkdowns(mdFiles []*MarkdownFile, authorID, blo
 }
 
 func parseArticle(mdFile *MarkdownFile) *model.Article {
-	util.Recover()
+	defer gulu.Panic.Recover(nil)
 
 	content := strings.TrimSpace(mdFile.Content)
 	frontMatter := strings.Split(content, "---")[0]

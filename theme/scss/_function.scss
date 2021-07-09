@@ -2,92 +2,73 @@
  * function.
  *
  * @author <a href="http://vanessa.b3log.org">Liyuan Li</a>
- * @version 0.1.0.0, Oct 11, 2017
+ * @version 0.4.0.0, Jul 17, 2019
  */
 
 .fn {
-  &-flex {
+  &__flex {
     display: flex;
   }
 
-  &-flex-center {
+  &__flex-center {
     display: inline-flex;
     align-items: center;
   }
 
-  &-flex-1 {
+  &__flex-shrink {
+    flex-shrink: 0;
+  }
+
+  &__flex-1 {
     flex: 1;
     min-width: 1px;
   }
 
-  &-pointer {
+  &__pointer {
     cursor: pointer;
   }
-  &-relative {
+
+  &__relative {
     position: relative;
   }
 
-  &-clear:before,
-  &-clear:after {
+  &__clear:before,
+  &__clear:after {
     display: table;
     content: "";
   }
 
-  &-clear:after {
+  &__clear:after {
     clear: both;
   }
 
-  &-left {
+  &__left {
     float: left;
   }
 
-  &-right {
+  &__right {
     float: right;
   }
 
-  &-none {
+  &__none {
     display: none;
   }
 
-  &-hidden {
-    visibility: hidden;
-  }
-
-  &-ellipsis {
+  &__ellipsis {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
     word-wrap: normal;
   }
-
-  &-level0 {
-    color: $fade;
-  }
-
-  &-level1 {
-    color: #ffcc00;
-  }
-
-  &-level2 {
-    color: #ffc1cc;
-  }
-
-  &-level3 {
-    color: #ff6633;
-  }
-
-  &-level4 {
-    color: $black;
-  }
 }
 
 // font
 .ft {
-  &-13 {
+  &__13 {
     font-size: 13px;
   }
 
-  &-12 {
+  &__12 {
     font-size: 12px;
 
     svg {
@@ -96,48 +77,31 @@
     }
   }
 
-  &-gray {
+  &__green {
+    color: #569e3d;
+  }
+
+  &__gray {
     color: $gray;
   }
 
-  &-fade {
+  &__fade {
     color: $fade;
   }
 
-  &-danger {
+  &__danger {
     color: $red;
   }
 
-  &-info {
-    color: $blue;
-  }
-
-  &-success {
-    color: $green;
-  }
-
-  &-a-title {
-    color: $black-light;
-    text-decoration: none;
-  }
-
-  &-a-title:hover {
-    color: $black;
-  }
-
-  &-center {
+  &__center {
     text-align: center;
   }
 
-  &-nowrap {
+  &__nowrap {
     white-space: nowrap;
   }
 
   &-break {
     word-break: break-all;
-  }
-
-  &-right {
-    text-align: right;
   }
 }

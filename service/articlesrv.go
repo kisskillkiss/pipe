@@ -1,5 +1,5 @@
 // Pipe - A small and beautiful blogging platform written in golang.
-// Copyright (C) 2017-2018, b3log.org
+// Copyright (C) 2017-present, b3log.org
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,6 +17,7 @@
 package service
 
 import (
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"net/url"
@@ -26,9 +27,11 @@ import (
 	"sync"
 	"time"
 
+	"github.com/b3log/gulu"
 	"github.com/b3log/pipe/model"
 	"github.com/b3log/pipe/util"
 	"github.com/jinzhu/gorm"
+	"github.com/parnurzeal/gorequest"
 )
 
 // Article service.
@@ -45,6 +48,16 @@ const (
 	adminConsoleArticleListPageSize   = 15
 	adminConsoleArticleListWindowSize = 20
 )
+
+func (srv *articleService) GetPlatMostViewArticles(size int) (ret []*model.Article) {
+	if err := db.Model(&model.Article{}).Select("`id`, `created_at`, `author_id`, `title`, `path`, `view_count`, `comment_count`, `blog_id`").
+		Where("`status` = ?", model.ArticleStatusOK).
+		Order("`view_count` DESC, `created_at` DESC").Limit(size).Find(&ret).Error; nil != err {
+		logger.Errorf("get platform most view articles failed: " + err.Error())
+	}
+
+	return
+}
 
 func (srv *articleService) GetUnpushedArticles() (ret []*model.Article) {
 	if err := db.Where("`pushed_at` <= ?", model.ZeroPushTime).Find(&ret).Error; nil != err {
@@ -120,7 +133,12 @@ func (srv *articleService) AddArticle(article *model.Article) (err error) {
 	srv.mutex.Lock()
 	defer srv.mutex.Unlock()
 
-	article.PushedAt = model.ZeroPushTime
+	if article.CreatedAt.IsZero() {
+		article.CreatedAt = time.Now()
+	}
+	if article.CreatedAt != article.PushedAt {
+		article.PushedAt = model.ZeroPushTime
+	}
 	if err := normalizeArticle(article); nil != err {
 		return err
 	}
@@ -317,6 +335,52 @@ func (srv *articleService) GetMostCommentArticles(size int, blogID uint64) (ret 
 	return
 }
 
+func (srv *articleService) ConsolePushArticle(article *model.Article) {
+	if nil == article {
+		return
+	}
+
+	author := User.GetUser(article.AuthorID)
+	b3Key := author.B3Key
+	b3Name := author.Name
+	if "" == b3Key {
+		return
+	}
+
+	blogTitleSetting := Setting.GetSetting(model.SettingCategoryBasic, model.SettingNameBasicBlogTitle, article.BlogID)
+	blogURLSetting := Setting.GetSetting(model.SettingCategoryBasic, model.SettingNameBasicBlogURL, article.BlogID)
+	requestJSON := map[string]interface{}{
+		"article": map[string]interface{}{
+			"id":        article.ID,
+			"title":     article.Title,
+			"permalink": article.Path,
+			"tags":      article.Tags,
+			"content":   article.Content,
+		},
+		"client": map[string]interface{}{
+			"title":     blogTitleSetting.Value,
+			"host":      blogURLSetting.Value,
+			"name":      "Pipe",
+			"ver":       model.Version,
+			"userName":  b3Name,
+			"userB3Key": b3Key,
+		},
+	}
+	result := gulu.Ret.NewResult()
+	_, _, errs := gorequest.New().TLSClientConfig(&tls.Config{InsecureSkipVerify: true}).
+		Post("https://rhythm.b3log.org/api/article").SendMap(requestJSON).
+		Set("user-agent", model.UserAgent).Timeout(30*time.Second).
+		Retry(3, 5*time.Second).EndStruct(result)
+	if nil != errs {
+		logger.Debugf("push an article to Rhy failed: " + errs[0].Error())
+	} else {
+		logger.Infof("push an article to Rhy result: %+v", result)
+	}
+
+	article.PushedAt = article.UpdatedAt
+	Article.UpdatePushedAt(article)
+}
+
 func (srv *articleService) ConsoleGetArticle(id uint64) *model.Article {
 	ret := &model.Article{}
 	if err := db.First(ret, id).Error; nil != err {
@@ -416,12 +480,12 @@ func (srv *articleService) UpdateArticle(article *model.Article) (err error) {
 	oldArticle.Topped = article.Topped
 	now := time.Now()
 	oldArticle.UpdatedAt = now
-	oldArticle.PushedAt = model.ZeroPushTime
 
-	tagStr, err := normalizeTagStr(article.Tags)
-	if nil != err {
-		return
+	if article.PushedAt.IsZero() {
+		oldArticle.PushedAt = model.ZeroPushTime
 	}
+
+	tagStr := normalizeTagStr(article.Tags)
 	oldArticle.Tags = tagStr
 
 	if err = normalizeArticlePath(article); nil != err {
@@ -495,10 +559,7 @@ func normalizeArticle(article *model.Article) error {
 		return errors.New("invalid path [" + article.Path + "]")
 	}
 
-	tagStr, err := normalizeTagStr(article.Tags)
-	if nil != err {
-		return err
-	}
+	tagStr := normalizeTagStr(article.Tags)
 	article.Tags = tagStr
 
 	if 1 > article.ID {
@@ -512,16 +573,16 @@ func normalizeArticle(article *model.Article) error {
 	return nil
 }
 
-func normalizeTagStr(tagStr string) (string, error) {
+func normalizeTagStr(tagStr string) string {
 	reg := regexp.MustCompile(`\s+`)
-	tagStrTmp := reg.ReplaceAllString(tagStr, "")
-	tagStrTmp = strings.Replace(tagStrTmp, "，", ",", -1)
-	tagStrTmp = strings.Replace(tagStrTmp, "、", ",", -1)
-	tagStrTmp = strings.Replace(tagStrTmp, "；", ",", -1)
-	tagStrTmp = strings.Replace(tagStrTmp, ";", ",", -1)
+	ret := reg.ReplaceAllString(tagStr, "")
+	ret = strings.Replace(ret, "，", ",", -1)
+	ret = strings.Replace(ret, "、", ",", -1)
+	ret = strings.Replace(ret, "；", ",", -1)
+	ret = strings.Replace(ret, ";", ",", -1)
 
 	reg = regexp.MustCompile(`[\\u4e00-\\u9fa5,\\w,&,\\+,-,\\.]+`)
-	tags := strings.Split(tagStrTmp, ",")
+	tags := strings.Split(ret, ",")
 	var retTags []string
 	for _, tag := range tags {
 		if contains(retTags, tag) {
@@ -535,11 +596,11 @@ func normalizeTagStr(tagStr string) (string, error) {
 		retTags = append(retTags, tag)
 	}
 
-	if "" == tagStrTmp {
-		return "", errors.New("invalid tags [" + tagStrTmp + "]")
+	if "" == ret {
+		return "待分类"
 	}
 
-	return tagStrTmp, nil
+	return ret
 }
 
 func removeTagArticleRels(tx *gorm.DB, article *model.Article) error {

@@ -1,5 +1,5 @@
 // Pipe - A small and beautiful blogging platform written in golang.
-// Copyright (C) 2017-2018, b3log.org
+// Copyright (C) 2017-present, b3log.org
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -22,12 +22,20 @@ import (
 	"text/template"
 
 	"github.com/b3log/pipe/model"
+	"github.com/b3log/pipe/util"
 	"github.com/gin-gonic/gin"
 )
 
 // ShowAdminPagesAction shows admin pages.
 func ShowAdminPagesAction(c *gin.Context) {
-	t, err := template.ParseFiles(filepath.ToSlash(filepath.Join(model.Conf.StaticRoot, "console/dist/admin"+c.Param("path")+"/index.html")))
+	session := util.GetSession(c)
+	if 0 == session.UID {
+		c.Redirect(http.StatusSeeOther, model.Conf.Server+"/start")
+
+		return
+	}
+
+	t, err := template.ParseFiles(filepath.Join("console/dist/admin" + c.Param("path") + "/index.html"))
 	if nil != err {
 		logger.Errorf("load console page [" + c.Param("path") + "] failed: " + err.Error())
 		c.String(http.StatusNotFound, "load console page failed")

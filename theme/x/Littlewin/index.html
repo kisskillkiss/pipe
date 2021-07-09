@@ -1,0 +1,24 @@
+{{define "Littlewin/index.html"}}
+<!DOCTYPE html>
+<html>
+<head>
+    {{template "head/head" .}}
+    {{template "head/3rdstatistic" .}}
+</head>
+<body>
+{{template "Littlewin/header" .}}
+<div class="fn__flex-1">
+    <div class="wrapper fn__flex header__meta">
+        <div class="main" id="pjax" >
+        {{if .pjax}}{{noescape "<!---- pjax {#pjax} start ---->"}}{{end}}
+            {{template "Littlewin/nav" .}}
+            {{template "Littlewin/article-list" .}}
+        {{if .pjax}}{{noescape "<!---- pjax {#pjax} end ---->"}}{{end}}
+        </div>
+        {{template "Littlewin/side" .}}
+    </div>
+</div>
+{{template "Littlewin/footer" .}}
+</body>
+</html>
+{{end}}

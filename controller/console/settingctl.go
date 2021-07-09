@@ -1,5 +1,5 @@
 // Pipe - A small and beautiful blogging platform written in golang.
-// Copyright (C) 2017-2018, b3log.org
+// Copyright (C) 2017-present, b3log.org
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -24,6 +24,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/b3log/gulu"
 	"github.com/b3log/pipe/model"
 	"github.com/b3log/pipe/service"
 	"github.com/b3log/pipe/util"
@@ -32,7 +33,7 @@ import (
 
 // GetBasicSettingsAction gets basic settings.
 func GetBasicSettingsAction(c *gin.Context) {
-	result := util.NewResult()
+	result := gulu.Ret.NewResult()
 	defer c.JSON(http.StatusOK, result)
 
 	session := util.GetSession(c)
@@ -57,12 +58,12 @@ func GetBasicSettingsAction(c *gin.Context) {
 
 // UpdateBasicSettingsAction updates basic settings.
 func UpdateBasicSettingsAction(c *gin.Context) {
-	result := util.NewResult()
+	result := gulu.Ret.NewResult()
 	defer c.JSON(http.StatusOK, result)
 
 	args := map[string]interface{}{}
 	if err := c.BindJSON(&args); nil != err {
-		result.Code = -1
+		result.Code = util.CodeErr
 		result.Msg = "parses update basic settings request failed"
 
 		return
@@ -87,7 +88,7 @@ func UpdateBasicSettingsAction(c *gin.Context) {
 
 			url, err := url.Parse(blogURL)
 			if nil != err {
-				result.Code = -1
+				result.Code = util.CodeErr
 				result.Msg = "invalid URL format"
 
 				return
@@ -110,14 +111,14 @@ func UpdateBasicSettingsAction(c *gin.Context) {
 	}
 
 	if err := service.Setting.UpdateSettings(model.SettingCategoryBasic, basics, session.BID); nil != err {
-		result.Code = -1
+		result.Code = util.CodeErr
 		result.Msg = err.Error()
 	}
 }
 
 // GetPreferenceSettingsAction gets preference settings.
 func GetPreferenceSettingsAction(c *gin.Context) {
-	result := util.NewResult()
+	result := gulu.Ret.NewResult()
 	defer c.JSON(http.StatusOK, result)
 
 	session := util.GetSession(c)
@@ -142,12 +143,12 @@ func GetPreferenceSettingsAction(c *gin.Context) {
 
 // UpdatePreferenceSettingsAction updates preference settings.
 func UpdatePreferenceSettingsAction(c *gin.Context) {
-	result := util.NewResult()
+	result := gulu.Ret.NewResult()
 	defer c.JSON(http.StatusOK, result)
 
 	args := map[string]interface{}{}
 	if err := c.BindJSON(&args); nil != err {
-		result.Code = -1
+		result.Code = util.CodeErr
 		result.Msg = "parses update preference settings request failed"
 
 		return
@@ -174,14 +175,14 @@ func UpdatePreferenceSettingsAction(c *gin.Context) {
 	}
 
 	if err := service.Setting.UpdateSettings(model.SettingCategoryPreference, prefs, session.BID); nil != err {
-		result.Code = -1
+		result.Code = util.CodeErr
 		result.Msg = err.Error()
 	}
 }
 
 // GetSignSettingsAction gets sign settings.
 func GetSignSettingsAction(c *gin.Context) {
-	result := util.NewResult()
+	result := gulu.Ret.NewResult()
 	defer c.JSON(http.StatusOK, result)
 
 	session := util.GetSession(c)
@@ -191,12 +192,12 @@ func GetSignSettingsAction(c *gin.Context) {
 
 // UpdateSignSettingsAction updates sign settings.
 func UpdateSignSettingsAction(c *gin.Context) {
-	result := util.NewResult()
+	result := gulu.Ret.NewResult()
 	defer c.JSON(http.StatusOK, result)
 
 	args := map[string]interface{}{}
 	if err := c.BindJSON(&args); nil != err {
-		result.Code = -1
+		result.Code = util.CodeErr
 		result.Msg = "parses update sign settings request failed"
 
 		return
@@ -213,14 +214,14 @@ func UpdateSignSettingsAction(c *gin.Context) {
 	signs = append(signs, sign)
 
 	if err := service.Setting.UpdateSettings(model.SettingCategorySign, signs, session.BID); nil != err {
-		result.Code = -1
+		result.Code = util.CodeErr
 		result.Msg = err.Error()
 	}
 }
 
 // GetI18nSettingsAction gets i18n settings.
 func GetI18nSettingsAction(c *gin.Context) {
-	result := util.NewResult()
+	result := gulu.Ret.NewResult()
 	defer c.JSON(http.StatusOK, result)
 
 	session := util.GetSession(c)
@@ -234,12 +235,12 @@ func GetI18nSettingsAction(c *gin.Context) {
 
 // UpdateI18nSettingsAction updates i18n settings.
 func UpdateI18nSettingsAction(c *gin.Context) {
-	result := util.NewResult()
+	result := gulu.Ret.NewResult()
 	defer c.JSON(http.StatusOK, result)
 
 	args := map[string]interface{}{}
 	if err := c.BindJSON(&args); nil != err {
-		result.Code = -1
+		result.Code = util.CodeErr
 		result.Msg = "parses update i18n settings request failed"
 
 		return
@@ -258,14 +259,14 @@ func UpdateI18nSettingsAction(c *gin.Context) {
 	}
 
 	if err := service.Setting.UpdateSettings(model.SettingCategoryI18n, i18ns, session.BID); nil != err {
-		result.Code = -1
+		result.Code = util.CodeErr
 		result.Msg = err.Error()
 	}
 }
 
 // GetFeedSettingsAction gets feed settings.
 func GetFeedSettingsAction(c *gin.Context) {
-	result := util.NewResult()
+	result := gulu.Ret.NewResult()
 	defer c.JSON(http.StatusOK, result)
 
 	session := util.GetSession(c)
@@ -289,12 +290,12 @@ func GetFeedSettingsAction(c *gin.Context) {
 
 // UpdateFeedSettingsAction updates feed settings.
 func UpdateFeedSettingsAction(c *gin.Context) {
-	result := util.NewResult()
+	result := gulu.Ret.NewResult()
 	defer c.JSON(http.StatusOK, result)
 
 	args := map[string]interface{}{}
 	if err := c.BindJSON(&args); nil != err {
-		result.Code = -1
+		result.Code = util.CodeErr
 		result.Msg = "parses update feed settings request failed"
 
 		return
@@ -321,14 +322,14 @@ func UpdateFeedSettingsAction(c *gin.Context) {
 	}
 
 	if err := service.Setting.UpdateSettings(model.SettingCategoryFeed, feeds, session.BID); nil != err {
-		result.Code = -1
+		result.Code = util.CodeErr
 		result.Msg = err.Error()
 	}
 }
 
 // GetThirdStatisticSettingsAction gets third statistic settings.
 func GetThirdStatisticSettingsAction(c *gin.Context) {
-	result := util.NewResult()
+	result := gulu.Ret.NewResult()
 	defer c.JSON(http.StatusOK, result)
 
 	session := util.GetSession(c)
@@ -341,12 +342,12 @@ func GetThirdStatisticSettingsAction(c *gin.Context) {
 
 // UpdateThirdStatisticSettingsAction updates third statistic settings.
 func UpdateThirdStatisticSettingsAction(c *gin.Context) {
-	result := util.NewResult()
+	result := gulu.Ret.NewResult()
 	defer c.JSON(http.StatusOK, result)
 
 	args := map[string]interface{}{}
 	if err := c.BindJSON(&args); nil != err {
-		result.Code = -1
+		result.Code = util.CodeErr
 		result.Msg = "parses update third statistic settings request failed"
 
 		return
@@ -363,7 +364,58 @@ func UpdateThirdStatisticSettingsAction(c *gin.Context) {
 	thridStatistics = append(thridStatistics, baiduStatistic)
 
 	if err := service.Setting.UpdateSettings(model.SettingCategoryThirdStatistic, thridStatistics, session.BID); nil != err {
-		result.Code = -1
+		result.Code = util.CodeErr
+		result.Msg = err.Error()
+	}
+}
+
+// GetAdSettingsAction get advertisement settings.
+func GetAdSettingsAction(c *gin.Context) {
+	result := gulu.Ret.NewResult()
+	defer c.JSON(http.StatusOK, result)
+
+	session := util.GetSession(c)
+	googleAdSenseArticleEmbedSetting := service.Setting.GetSetting(model.SettingCategoryAd, model.SettingNameAdGoogleAdSenseArticleEmbed, session.BID)
+	data := map[string]string{
+		model.SettingNameAdGoogleAdSenseArticleEmbed: googleAdSenseArticleEmbedSetting.Value,
+	}
+	result.Data = data
+}
+
+// UpdateAdSettingsAction update third statistic settings.
+func UpdateAdSettingsAction(c *gin.Context) {
+	result := gulu.Ret.NewResult()
+	defer c.JSON(http.StatusOK, result)
+
+	args := map[string]interface{}{}
+	if err := c.BindJSON(&args); nil != err {
+		result.Code = util.CodeErr
+		result.Msg = "parses update ad settings request failed"
+
+		return
+	}
+
+	googleAdSenseArticleEmbedVal := args["adGoogleAdSenseArticleEmbed"].(string)
+	googleAdSenseArticleEmbedVal = strings.TrimSpace(googleAdSenseArticleEmbedVal)
+	if !strings.HasPrefix(googleAdSenseArticleEmbedVal, "<ins ") || !strings.HasSuffix(googleAdSenseArticleEmbedVal, "</ins>") {
+		result.Code = util.CodeErr
+		result.Msg = "please just put <ins>....</ins> part"
+
+		return
+	}
+
+	session := util.GetSession(c)
+	var ads []*model.Setting
+	googleAdSenseArticleEmbed := &model.Setting{
+		Category: model.SettingCategoryAd,
+		BlogID:   session.BID,
+		Name:     model.SettingNameAdGoogleAdSenseArticleEmbed,
+		Value:    googleAdSenseArticleEmbedVal,
+	}
+	ads = append(ads, googleAdSenseArticleEmbed)
+
+	if err := service.Setting.UpdateSettings(model.SettingCategoryAd, ads, session.BID); nil != err {
+		result.Code = util.CodeErr
 		result.Msg = err.Error()
 	}
 }

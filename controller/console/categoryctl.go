@@ -1,5 +1,5 @@
 // Pipe - A small and beautiful blogging platform written in golang.
-// Copyright (C) 2017-2018, b3log.org
+// Copyright (C) 2017-present, b3log.org
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/b3log/gulu"
 	"github.com/b3log/pipe/model"
 	"github.com/b3log/pipe/service"
 	"github.com/b3log/pipe/util"
@@ -28,13 +29,13 @@ import (
 
 // UpdateCategoryAction updates a category.
 func UpdateCategoryAction(c *gin.Context) {
-	result := util.NewResult()
+	result := gulu.Ret.NewResult()
 	defer c.JSON(http.StatusOK, result)
 
 	idArg := c.Param("id")
 	id, err := strconv.ParseUint(idArg, 10, 64)
 	if nil != err {
-		result.Code = -1
+		result.Code = util.CodeErr
 		result.Msg = err.Error()
 
 		return
@@ -42,7 +43,7 @@ func UpdateCategoryAction(c *gin.Context) {
 
 	category := &model.Category{Model: model.Model{ID: uint64(id)}}
 	if err := c.BindJSON(category); nil != err {
-		result.Code = -1
+		result.Code = util.CodeErr
 		result.Msg = "parses update category request failed"
 
 		return
@@ -52,20 +53,20 @@ func UpdateCategoryAction(c *gin.Context) {
 	category.BlogID = session.BID
 
 	if err := service.Category.UpdateCategory(category); nil != err {
-		result.Code = -1
+		result.Code = util.CodeErr
 		result.Msg = err.Error()
 	}
 }
 
 // GetCategoryAction gets a category.
 func GetCategoryAction(c *gin.Context) {
-	result := util.NewResult()
+	result := gulu.Ret.NewResult()
 	defer c.JSON(http.StatusOK, result)
 
 	idArg := c.Param("id")
 	id, err := strconv.ParseUint(idArg, 10, 64)
 	if nil != err {
-		result.Code = -1
+		result.Code = util.CodeErr
 		result.Msg = err.Error()
 
 		return
@@ -73,7 +74,7 @@ func GetCategoryAction(c *gin.Context) {
 
 	data := service.Category.ConsoleGetCategory(id)
 	if nil == data {
-		result.Code = -1
+		result.Code = util.CodeErr
 
 		return
 	}
@@ -83,7 +84,7 @@ func GetCategoryAction(c *gin.Context) {
 
 // GetCategoriesAction gets categories.
 func GetCategoriesAction(c *gin.Context) {
-	result := util.NewResult()
+	result := gulu.Ret.NewResult()
 	defer c.JSON(http.StatusOK, result)
 
 	session := util.GetSession(c)
@@ -110,14 +111,14 @@ func GetCategoriesAction(c *gin.Context) {
 
 // AddCategoryAction adds a category.
 func AddCategoryAction(c *gin.Context) {
-	result := util.NewResult()
+	result := gulu.Ret.NewResult()
 	defer c.JSON(http.StatusOK, result)
 
 	session := util.GetSession(c)
 
 	category := &model.Category{}
 	if err := c.BindJSON(category); nil != err {
-		result.Code = -1
+		result.Code = util.CodeErr
 		result.Msg = "parses add category request failed"
 
 		return
@@ -125,20 +126,20 @@ func AddCategoryAction(c *gin.Context) {
 
 	category.BlogID = session.BID
 	if err := service.Category.AddCategory(category); nil != err {
-		result.Code = -1
+		result.Code = util.CodeErr
 		result.Msg = err.Error()
 	}
 }
 
 // RemoveCategoryAction removes a category.
 func RemoveCategoryAction(c *gin.Context) {
-	result := util.NewResult()
+	result := gulu.Ret.NewResult()
 	defer c.JSON(http.StatusOK, result)
 
 	idArg := c.Param("id")
 	id, err := strconv.ParseUint(idArg, 10, 64)
 	if nil != err {
-		result.Code = -1
+		result.Code = util.CodeErr
 		result.Msg = err.Error()
 
 		return
@@ -147,7 +148,7 @@ func RemoveCategoryAction(c *gin.Context) {
 	session := util.GetSession(c)
 	blogID := session.BID
 	if err := service.Category.RemoveCategory(id, blogID); nil != err {
-		result.Code = -1
+		result.Code = util.CodeErr
 		result.Msg = err.Error()
 	}
 }

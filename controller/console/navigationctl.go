@@ -1,5 +1,5 @@
 // Pipe - A small and beautiful blogging platform written in golang.
-// Copyright (C) 2017-2018, b3log.org
+// Copyright (C) 2017-present, b3log.org
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/b3log/gulu"
 	"github.com/b3log/pipe/model"
 	"github.com/b3log/pipe/service"
 	"github.com/b3log/pipe/util"
@@ -28,7 +29,7 @@ import (
 
 // GetNavigationsAction gets navigations.
 func GetNavigationsAction(c *gin.Context) {
-	result := util.NewResult()
+	result := gulu.Ret.NewResult()
 	defer c.JSON(http.StatusOK, result)
 
 	session := util.GetSession(c)
@@ -56,20 +57,20 @@ func GetNavigationsAction(c *gin.Context) {
 
 // GetNavigationAction gets a navigation.
 func GetNavigationAction(c *gin.Context) {
-	result := util.NewResult()
+	result := gulu.Ret.NewResult()
 	defer c.JSON(http.StatusOK, result)
 
 	idArg := c.Param("id")
 	id, err := strconv.ParseUint(idArg, 10, 64)
 	if nil != err {
-		result.Code = -1
+		result.Code = util.CodeErr
 
 		return
 	}
 
 	data := service.Navigation.ConsoleGetNavigation(uint64(id))
 	if nil == data {
-		result.Code = -1
+		result.Code = util.CodeErr
 
 		return
 	}
@@ -79,13 +80,13 @@ func GetNavigationAction(c *gin.Context) {
 
 // RemoveNavigationAction remove a navigation.
 func RemoveNavigationAction(c *gin.Context) {
-	result := util.NewResult()
+	result := gulu.Ret.NewResult()
 	defer c.JSON(http.StatusOK, result)
 
 	idArg := c.Param("id")
 	id, err := strconv.ParseUint(idArg, 10, 64)
 	if nil != err {
-		result.Code = -1
+		result.Code = util.CodeErr
 		result.Msg = err.Error()
 
 		return
@@ -95,20 +96,20 @@ func RemoveNavigationAction(c *gin.Context) {
 	blogID := session.BID
 
 	if err := service.Navigation.RemoveNavigation(uint64(id), blogID); nil != err {
-		result.Code = -1
+		result.Code = util.CodeErr
 		result.Msg = err.Error()
 	}
 }
 
 // UpdateNavigationAction updates a navigation.
 func UpdateNavigationAction(c *gin.Context) {
-	result := util.NewResult()
+	result := gulu.Ret.NewResult()
 	defer c.JSON(http.StatusOK, result)
 
 	idArg := c.Param("id")
 	id, err := strconv.ParseUint(idArg, 10, 64)
 	if nil != err {
-		result.Code = -1
+		result.Code = util.CodeErr
 		result.Msg = err.Error()
 
 		return
@@ -116,7 +117,7 @@ func UpdateNavigationAction(c *gin.Context) {
 
 	navigation := &model.Navigation{Model: model.Model{ID: uint64(id)}}
 	if err := c.BindJSON(navigation); nil != err {
-		result.Code = -1
+		result.Code = util.CodeErr
 		result.Msg = "parses update navigation request failed"
 
 		return
@@ -126,21 +127,21 @@ func UpdateNavigationAction(c *gin.Context) {
 	navigation.BlogID = session.BID
 
 	if err := service.Navigation.UpdateNavigation(navigation); nil != err {
-		result.Code = -1
+		result.Code = util.CodeErr
 		result.Msg = err.Error()
 	}
 }
 
 // AddNavigationAction adds a navigation.
 func AddNavigationAction(c *gin.Context) {
-	result := util.NewResult()
+	result := gulu.Ret.NewResult()
 	defer c.JSON(http.StatusOK, result)
 
 	session := util.GetSession(c)
 
 	navigation := &model.Navigation{}
 	if err := c.BindJSON(navigation); nil != err {
-		result.Code = -1
+		result.Code = util.CodeErr
 		result.Msg = "parses add navigation request failed"
 
 		return
@@ -148,7 +149,7 @@ func AddNavigationAction(c *gin.Context) {
 
 	navigation.BlogID = session.BID
 	if err := service.Navigation.AddNavigation(navigation); nil != err {
-		result.Code = -1
+		result.Code = util.CodeErr
 		result.Msg = err.Error()
 	}
 }

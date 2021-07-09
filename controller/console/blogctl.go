@@ -1,5 +1,5 @@
 // Pipe - A small and beautiful blogging platform written in golang.
-// Copyright (C) 2017-2018, b3log.org
+// Copyright (C) 2017-present, b3log.org
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,26 +17,28 @@
 package console
 
 import (
+	"crypto/tls"
 	"net/http"
 	"strconv"
 	"time"
 
+	"github.com/b3log/gulu"
+	"github.com/b3log/pipe/model"
 	"github.com/b3log/pipe/service"
 	"github.com/b3log/pipe/util"
 	"github.com/gin-gonic/gin"
 	"github.com/parnurzeal/gorequest"
-	"github.com/b3log/pipe/model"
 )
 
 // BlogSwitchAction switches blog.
 func BlogSwitchAction(c *gin.Context) {
-	result := util.NewResult()
+	result := gulu.Ret.NewResult()
 	defer c.JSON(http.StatusOK, result)
 
 	idArg := c.Param("id")
 	blogID, err := strconv.ParseUint(idArg, 10, 64)
 	if nil != err {
-		result.Code = -1
+		result.Code = util.CodeErr
 
 		return
 	}
@@ -46,7 +48,7 @@ func BlogSwitchAction(c *gin.Context) {
 
 	userBlogs := service.User.GetUserBlogs(userID)
 	if 1 > len(userBlogs) {
-		result.Code = -1
+		result.Code = util.CodeErr
 		result.Msg = "switch blog failed"
 
 		return
@@ -62,7 +64,7 @@ func BlogSwitchAction(c *gin.Context) {
 	}
 
 	if -1 == role {
-		result.Code = -1
+		result.Code = util.CodeErr
 		result.Msg = "switch blog failed"
 
 		return
@@ -75,18 +77,18 @@ func BlogSwitchAction(c *gin.Context) {
 	session.Save(c)
 }
 
-// CheckVersion checks version.
-func CheckVersion(c *gin.Context) {
-	result := util.NewResult()
+// CheckVersionAction checks version.
+func CheckVersionAction(c *gin.Context) {
+	result := gulu.Ret.NewResult()
 	defer c.JSON(http.StatusOK, result)
 
 	rhyResult := map[string]interface{}{}
-	request := gorequest.New()
+	request := gorequest.New().TLSClientConfig(&tls.Config{InsecureSkipVerify: true})
 	_, _, errs := request.Get("https://rhythm.b3log.org/version/pipe/latest/"+model.Version).
 		Set("User-Agent", model.UserAgent).Timeout(30*time.Second).
-		Retry(3, 5*time.Second, http.StatusInternalServerError).EndStruct(&rhyResult)
+		Retry(3, 5*time.Second).EndStruct(&rhyResult)
 	if nil != errs {
-		result.Code = -1
+		result.Code = util.CodeErr
 		result.Msg = errs[0].Error()
 
 		return

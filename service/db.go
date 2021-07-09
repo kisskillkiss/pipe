@@ -1,5 +1,5 @@
 // Pipe - A small and beautiful blogging platform written in golang.
-// Copyright (C) 2017-2018, b3log.org
+// Copyright (C) 2017-present, b3log.org
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -18,8 +18,9 @@ package service
 
 import (
 	"os"
+	"time"
 
-	"github.com/b3log/pipe/log"
+	"github.com/b3log/gulu"
 	"github.com/b3log/pipe/model"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql"  // mysql
@@ -27,7 +28,7 @@ import (
 )
 
 // Logger
-var logger = log.NewLogger(os.Stdout)
+var logger = gulu.Log.NewLogger(os.Stdout)
 
 var db *gorm.DB
 var useSQLite bool
@@ -63,6 +64,7 @@ func ConnectDB() {
 
 	db.DB().SetMaxIdleConns(10)
 	db.DB().SetMaxOpenConns(50)
+	db.DB().SetConnMaxLifetime(5 * time.Minute)
 	db.LogMode(model.Conf.ShowSQL)
 }
 

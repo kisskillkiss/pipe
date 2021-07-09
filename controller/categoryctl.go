@@ -1,5 +1,5 @@
 // Pipe - A small and beautiful blogging platform written in golang.
-// Copyright (C) 2017-2018, b3log.org
+// Copyright (C) 2017-present, b3log.org
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -53,7 +53,7 @@ func showCategoriesAction(c *gin.Context) {
 			URL:          getBlogURL(c) + util.PathCategories + categoryModel.Path,
 			Description:  categoryModel.Description,
 			Tags:         themeTags,
-			ArticleCount: 8, // TODO: category article count
+			ArticleCount: service.Category.GetCategoryArticleCount(categoryModel.ID, blogID),
 		}
 		themeCategories = append(themeCategories, themeCategory)
 	}
@@ -118,18 +118,21 @@ func showCategoryArticlesArticlesAction(c *gin.Context) {
 			thumbnailURL = ""
 		}
 		article := &model.ThemeArticle{
-			ID:           articleModel.ID,
-			Abstract:     abstract,
-			Author:       author,
-			CreatedAt:    articleModel.CreatedAt.Format("2006-01-02"),
-			Title:        pangu.SpacingText(articleModel.Title),
-			Tags:         themeTags,
-			URL:          getBlogURL(c) + articleModel.Path,
-			Topped:       articleModel.Topped,
-			ViewCount:    articleModel.ViewCount,
-			CommentCount: articleModel.CommentCount,
-			ThumbnailURL: thumbnailURL,
-			Editable:     session.UID == authorModel.ID,
+			ID:             articleModel.ID,
+			Abstract:       abstract,
+			Author:         author,
+			CreatedAt:      articleModel.CreatedAt.Format("2006-01-02"),
+			CreatedAtYear:  articleModel.CreatedAt.Format("2006"),
+			CreatedAtMonth: articleModel.CreatedAt.Format("01"),
+			CreatedAtDay:   articleModel.CreatedAt.Format("02"),
+			Title:          pangu.SpacingText(articleModel.Title),
+			Tags:           themeTags,
+			URL:            getBlogURL(c) + articleModel.Path,
+			Topped:         articleModel.Topped,
+			ViewCount:      articleModel.ViewCount,
+			CommentCount:   articleModel.CommentCount,
+			ThumbnailURL:   thumbnailURL,
+			Editable:       session.UID == authorModel.ID,
 		}
 
 		articles = append(articles, article)

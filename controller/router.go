@@ -1,5 +1,5 @@
 // Pipe - A small and beautiful blogging platform written in golang.
-// Copyright (C) 2017-2018, b3log.org
+// Copyright (C) 2017-present, b3log.org
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -24,17 +24,18 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/b3log/gulu"
 	"github.com/b3log/pipe/controller/console"
-	"github.com/b3log/pipe/log"
 	"github.com/b3log/pipe/model"
 	"github.com/b3log/pipe/theme"
 	"github.com/b3log/pipe/util"
 	"github.com/gin-contrib/sessions"
+	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
 )
 
 // Logger
-var logger = log.NewLogger(os.Stdout)
+var logger = gulu.Log.NewLogger(os.Stdout)
 
 // MapRoutes returns a gin engine and binds controllers with request URLs.
 func MapRoutes() *gin.Engine {
@@ -54,13 +55,17 @@ func MapRoutes() *gin.Engine {
 			}
 			return dict, nil
 		},
-		"minus": func(a, b int) int { return a - b },
-		"mod":   func(a, b int) int { return a % b },
+		"minus":    func(a, b int) int { return a - b },
+		"mod":      func(a, b int) int { return a % b },
+		"noescape": func(s string) template.HTML { return template.HTML(s) },
 	})
 
+	if "dev" == model.Conf.RuntimeMode {
+		ret.Use(gin.Logger())
+	}
 	ret.Use(gin.Recovery())
 
-	store := sessions.NewCookieStore([]byte(model.Conf.SessionSecret))
+	store := cookie.NewStore([]byte(model.Conf.SessionSecret))
 	store.Options(sessions.Options{
 		Path:     "/",
 		MaxAge:   model.Conf.SessionMaxAge,
@@ -68,20 +73,17 @@ func MapRoutes() *gin.Engine {
 		HttpOnly: true,
 	})
 	ret.Use(sessions.Sessions("pipe", store))
-	ret.POST(util.PathUpload, uploadAction)
-	ret.GET(util.PathPlatInfo, showPlatInfo)
+	ret.GET(util.PathPlatInfo, showPlatInfoAction)
 	ret.GET(util.PathSitemap, outputSitemapAction)
 
 	api := ret.Group(util.PathAPI)
-	api.POST("/init", initAction)
-	api.POST("/init/local", initLocalAction)
-	api.POST("/register", registerAction)
-	api.POST("/login", loginAction)
 	api.POST("/logout", logoutAction)
 	api.Any("/hp/*apis", util.HacPaiAPI())
 	api.GET("/status", getStatusAction)
-	api.GET("/check-version", console.CheckVersion)
-	api.GET("/blogs/top", showTopBlogs)
+	api.GET("/check-version", console.CheckVersionAction)
+	api.GET("/blogs/top", showTopBlogsAction)
+	api.GET("/oauth/github/redirect", redirectGitHubLoginAction)
+	api.GET("/oauth/github/callback", githubCallbackAction)
 
 	consoleGroup := api.Group("/console")
 	consoleGroup.Use(console.LoginCheck)
@@ -93,10 +95,14 @@ func MapRoutes() *gin.Engine {
 	consoleGroup.GET("/themes", console.GetThemesAction)
 	consoleGroup.PUT("/themes/:id", console.UpdateThemeAction)
 	consoleGroup.GET("/tags", console.GetTagsAction)
+	consoleGroup.GET("/taglist", console.GetTagsPageAction)
+	consoleGroup.DELETE("/tags/:id", console.RemoveTagsAction)
 	consoleGroup.POST("/articles", console.AddArticleAction)
+	consoleGroup.GET("/upload/token", console.UploadTokenAction)
 	consoleGroup.POST("/articles/batch-delete", console.RemoveArticlesAction)
 	consoleGroup.GET("/articles", console.GetArticlesAction)
 	consoleGroup.GET("/articles/:id", console.GetArticleAction)
+	consoleGroup.GET("/articles/:id/push", console.PushArticle2RhyAction)
 	consoleGroup.DELETE("/articles/:id", console.RemoveArticleAction)
 	consoleGroup.PUT("/articles/:id", console.UpdateArticleAction)
 	consoleGroup.GET("/comments", console.GetCommentsAction)
@@ -133,35 +139,37 @@ func MapRoutes() *gin.Engine {
 	consoleSettingsGroup.PUT("/feed", console.UpdateFeedSettingsAction)
 	consoleSettingsGroup.GET("/third-stat", console.GetThirdStatisticSettingsAction)
 	consoleSettingsGroup.PUT("/third-stat", console.UpdateThirdStatisticSettingsAction)
+	consoleSettingsGroup.GET("/ad", console.GetAdSettingsAction)
+	consoleSettingsGroup.PUT("/ad", console.UpdateAdSettingsAction)
 	consoleSettingsGroup.GET("/account", console.GetAccountAction)
 	consoleSettingsGroup.PUT("/account", console.UpdateAccountAction)
-	consoleSettingsGroup.PUT("/account/password", console.UpdatePasswordAction)
 
-	ret.StaticFile(util.PathFavicon, staticPath("console/static/favicon.ico"))
+	ret.StaticFile(util.PathFavicon, "console/static/favicon.ico")
+	ret.StaticFile(util.PathManifest, "console/static/manifest.json")
 
-	ret.Static(util.PathTheme+"/scss", staticPath("theme/scss"))
-	ret.Static(util.PathTheme+"/js", staticPath("theme/js"))
-	ret.Static(util.PathTheme+"/images", staticPath("theme/images"))
-	ret.StaticFile("/sw.min.js", staticPath("theme/sw.min.js"))
-	ret.StaticFile("/halt.html", staticPath("theme/halt.html"))
+	ret.Static(util.PathTheme+"/scss", "theme/scss")
+	ret.Static(util.PathTheme+"/js", "theme/js")
+	ret.Static(util.PathTheme+"/images", "theme/images")
+	ret.StaticFile("/sw.min.js", "theme/sw.min.js")
+	ret.StaticFile("/halt.html", "theme/halt.html")
 
 	for _, theme := range theme.Themes {
-		themePath := staticPath("theme/x/" + theme)
+		themePath := "theme/x/" + theme
 		ret.Static("/theme/x/"+theme+"/css", themePath+"/css")
 		ret.Static("/theme/x/"+theme+"/js", themePath+"/js")
 		ret.Static("/theme/x/"+theme+"/images", themePath+"/images")
 		ret.StaticFile("/theme/x/"+theme+"/thumbnail.jpg", themePath+"/thumbnail.jpg")
 	}
-	themeTemplates, err := filepath.Glob(staticPath("theme/x/*/*.html"))
+	themeTemplates, err := filepath.Glob("theme/x/*/*.html")
 	if nil != err {
 		logger.Fatal("load theme templates failed: " + err.Error())
 	}
-	themeTemplates = append(themeTemplates, staticPath("theme/search/index.html"))
-	commentTemplates, err := filepath.Glob(staticPath("theme/comment/*.html"))
+	themeTemplates = append(themeTemplates, "theme/search/index.html")
+	commentTemplates, err := filepath.Glob("theme/comment/*.html")
 	if nil != err {
 		logger.Fatal("load comment templates failed: " + err.Error())
 	}
-	headTemplates, err := filepath.Glob(staticPath("theme/head/*.html"))
+	headTemplates, err := filepath.Glob("theme/head/*.html")
 	if nil != err {
 		logger.Fatal("load head templates failed: " + err.Error())
 	}
@@ -169,7 +177,7 @@ func MapRoutes() *gin.Engine {
 	templates = append(templates, headTemplates...)
 	ret.LoadHTMLFiles(templates...)
 	themeGroup := ret.Group(util.PathBlogs + "/:username")
-	themeGroup.Use(fillUser, resolveBlog)
+	themeGroup.Use(fillUser, pjax, resolveBlog)
 	themeGroup.GET("", showArticlesAction)
 	themeGroup.Any("/*path", routePath)
 
@@ -181,16 +189,14 @@ func MapRoutes() *gin.Engine {
 	indexGroup := ret.Group("")
 	indexGroup.Use(fillUser)
 	indexGroup.GET("", showIndexAction)
-	indexGroup.GET(util.PathLogin, showLoginPageAction)
-	indexGroup.GET(util.PathRegister, showRegisterPageAction)
 
 	initGroup := ret.Group(util.PathInit)
 	initGroup.Use(fillUser)
-	initGroup.GET("", showInitPageAction)
+	initGroup.GET("", showStartPageAction)
 
-	ret.Static(util.PathConsoleDist, staticPath("console/dist"))
-	ret.StaticFile(util.PathChangelogs, staticPath("changelogs.html"))
-	ret.StaticFile(util.PathRobots, staticPath("theme/robots.txt"))
+	ret.Static(util.PathConsoleDist, "console/dist")
+	ret.StaticFile(util.PathChangelogs, "changelogs.html")
+	ret.StaticFile(util.PathRobots, "theme/robots.txt")
 	ret.NoRoute(func(c *gin.Context) {
 		notFound(c)
 	})
@@ -234,14 +240,6 @@ func routePath(c *gin.Context) {
 		outputRSSAction(c)
 
 		return
-	case util.PathUpload:
-		uploadAction(c)
-
-		return
-	case util.PathFetchUpload:
-		fetchUploadAction(c)
-
-		return
 	case util.PathSearch:
 		searchAction(c)
 
@@ -250,16 +248,24 @@ func routePath(c *gin.Context) {
 		showOpensearchAction(c)
 
 		return
+	case util.PathManifest:
+		showManifestAction(c)
+
+		return
 	case util.PathAPIsSymComment:
 		addSymCommentAction(c)
 
 		return
 	case util.PathAPIsSymArticle:
-		if "POST" == c.Request.Method {
-			addSymArticleAction(c)
-		} else if "PUT" == c.Request.Method {
-			updateSymArticleAction(c)
-		}
+		addSymArticleAction(c)
+
+		return
+	case "/api/oauth/github/callback":
+		githubCallbackAction(c)
+
+		return
+	case "/api/markdown":
+		console.MarkdownAction(c)
 
 		return
 	}
@@ -305,6 +311,17 @@ func routePath(c *gin.Context) {
 	notFound(c)
 }
 
-func staticPath(relativePath string) string {
-	return filepath.ToSlash(filepath.Join(model.Conf.StaticRoot, relativePath))
+func cors() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Header("Access-Control-Allow-Origin", "*")
+		c.Header("Access-Control-Allow-Credentials", "true")
+		c.Header("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
+		c.Header("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT, DELETE")
+		if c.Request.Method == "OPTIONS" {
+			c.AbortWithStatus(204)
+			return
+		}
+
+		c.Next()
+	}
 }

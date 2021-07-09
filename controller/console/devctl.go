@@ -1,5 +1,5 @@
 // Pipe - A small and beautiful blogging platform written in golang.
-// Copyright (C) 2017-2018, b3log.org
+// Copyright (C) 2017-present, b3log.org
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,6 +17,7 @@
 package console
 
 import (
+	"math/rand"
 	"net/http"
 	"strconv"
 
@@ -24,7 +25,6 @@ import (
 	"github.com/b3log/pipe/service"
 	"github.com/b3log/pipe/util"
 	"github.com/gin-gonic/gin"
-	"math/rand"
 )
 
 // GenArticlesAction generates articles for testing.

@@ -1,5 +1,5 @@
 // Pipe - A small and beautiful blogging platform written in golang.
-// Copyright (C) 2017-2018, b3log.org
+// Copyright (C) 2017-present, b3log.org
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/b3log/gulu"
 	"github.com/b3log/pipe/service"
 	"github.com/b3log/pipe/util"
 	"github.com/gin-gonic/gin"
@@ -30,12 +31,12 @@ import (
 
 // ExportMarkdownAction exports articles as markdown zip file.
 func ExportMarkdownAction(c *gin.Context) {
-	result := util.NewResult()
+	result := gulu.Ret.NewResult()
 	defer c.JSON(http.StatusOK, result)
 
 	session := util.GetSession(c)
-	if nil == session {
-		result.Code = -1
+	if 0 == session.UID {
+		result.Code = util.CodeErr
 		result.Msg = "please login before export"
 
 		return
@@ -44,10 +45,10 @@ func ExportMarkdownAction(c *gin.Context) {
 	tempDir := os.TempDir()
 	logger.Trace("temp dir path is [" + tempDir + "]")
 	zipFilePath := filepath.Join(tempDir, session.UName+"-export-md.zip")
-	zipFile, err := util.Zip.Create(zipFilePath)
+	zipFile, err := gulu.Zip.Create(zipFilePath)
 	if nil != err {
 		logger.Errorf("create zip file [" + zipFilePath + "] failed: " + err.Error())
-		result.Code = -1
+		result.Code = util.CodeErr
 		result.Msg = "create zip file failed"
 
 		return
@@ -62,7 +63,7 @@ func ExportMarkdownAction(c *gin.Context) {
 		file, err := os.Open(zipFilePath)
 		if nil != err {
 			logger.Errorf("open zip file [" + zipFilePath + " failed: " + err.Error())
-			result.Code = -1
+			result.Code = util.CodeErr
 			result.Msg = "open zip file failed"
 
 			return
@@ -77,14 +78,14 @@ func ExportMarkdownAction(c *gin.Context) {
 	zipPath := filepath.Join(tempDir, session.UName+"-export-md")
 	if err = os.RemoveAll(zipPath); nil != err {
 		logger.Errorf("remove temp dir [" + zipPath + "] failed: " + err.Error())
-		result.Code = -1
+		result.Code = util.CodeErr
 		result.Msg = "remove temp dir failed"
 
 		return
 	}
 	if err = os.Mkdir(zipPath, 0755); nil != err {
 		logger.Errorf("make temp dir [" + zipPath + "] failed: " + err.Error())
-		result.Code = -1
+		result.Code = util.CodeErr
 		result.Msg = "make temp dir failed"
 
 		return
@@ -99,7 +100,7 @@ func ExportMarkdownAction(c *gin.Context) {
 	zipFile.AddDirectory(session.UName+"-export-md", zipPath)
 	if err := zipFile.Close(); nil != err {
 		logger.Errorf("zip failed: " + err.Error())
-		result.Code = -1
+		result.Code = util.CodeErr
 		result.Msg = "zip failed"
 
 		return
@@ -107,7 +108,7 @@ func ExportMarkdownAction(c *gin.Context) {
 	file, err := os.Open(zipFilePath)
 	if nil != err {
 		logger.Errorf("open zip file [" + zipFilePath + " failed: " + err.Error())
-		result.Code = -1
+		result.Code = util.CodeErr
 		result.Msg = "open zip file failed"
 
 		return

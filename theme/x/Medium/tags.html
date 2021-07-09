@@ -6,6 +6,8 @@
     {{template "head/3rdstatistic" .}}
 </head>
 <body>
+<div id="pjax">
+{{if .pjax}}{{noescape "<!---- pjax {#pjax} start ---->"}}{{end}}
 {{template "Medium/header" .}}
 {{template "Medium/nav" .}}
 <div class="main">
@@ -17,14 +19,14 @@
     <div class="wrapper content">
         <h2 class="module__title">
             <span>
-                <span id="tagArticleCount">0</span> <span class="ft-fade ft-13">{{.I18n.Tags2}}</span>
+                <span id="tagArticleCount">0</span> <span class="ft__fade ft__13">{{.I18n.Tags2}}</span>
             </span>
         </h2>
         <div id="tags">
             {{range .Tags}}
             <a href="{{.URL}}" data-count="{{.ArticleCount}}" class="tag">
                 {{.Title}}
-                <span class="ft-fade">{{.ArticleCount}} {{$.I18n.Space}}</span>
+                <span class="ft__fade">{{.ArticleCount}} {{$.I18n.Space}}</span>
             </a>
             {{end}}
         </div>
@@ -36,6 +38,8 @@
   increase({{len .Tags}}, 1000, 'tagArticleCount', 0)
   addLevelToTag()
 </script>
+{{if .pjax}}{{noescape "<!---- pjax {#pjax} end ---->"}}{{end}}
+</div>
 </body>
 </html>
 {{end}}

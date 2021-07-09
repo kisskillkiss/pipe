@@ -1,5 +1,5 @@
 // Pipe - A small and beautiful blogging platform written in golang.
-// Copyright (C) 2017-2018, b3log.org
+// Copyright (C) 2017-present, b3log.org
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -76,6 +76,7 @@ const (
 	SettingNamePreferenceMostUseTagListSize         = "preferenceMostUseTagListSize"
 	SettingNamePreferenceMostViewArticleListSize    = "preferenceMostViewArticleListSize"
 	SettingNamePreferenceRecentCommentListSize      = "preferenceRecentCommentListSize"
+	SettingNamePreferenceRecommendArticleListSize   = "preferenceRecommendArticleListSize"
 )
 
 // Setting values of category "preference".
@@ -91,6 +92,7 @@ const (
 	SettingPreferenceMostUseTagListSizeDefault         = 15
 	SettingPreferenceMostViewArticleListSizeDefault    = 15
 	SettingPreferenceRecentCommentListSizeDefault      = 7
+	SettingPreferenceRecommendArticleListSizeDefault   = 1
 )
 
 // Setting names of category "sign".
@@ -140,4 +142,11 @@ const (
 	SettingNameStatisticArticleCount = "statisticArticleCount"
 	SettingNameStatisticCommentCount = "statisticCommentCount"
 	SettingNameStatisticViewCount    = "statisticViewCount"
+)
+
+// Setting names of category "ad".
+const (
+	SettingCategoryAd = "ad"
+
+	SettingNameAdGoogleAdSenseArticleEmbed = "adGoogleAdSenseArticleEmbed"
 )

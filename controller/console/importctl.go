@@ -1,5 +1,5 @@
 // Pipe - A small and beautiful blogging platform written in golang.
-// Copyright (C) 2017-2018, b3log.org
+// Copyright (C) 2017-present, b3log.org
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/b3log/gulu"
 	"github.com/b3log/pipe/service"
 	"github.com/b3log/pipe/util"
 	"github.com/gin-gonic/gin"
@@ -30,12 +31,12 @@ import (
 
 // ImportMarkdownAction imports markdown zip file as articles.
 func ImportMarkdownAction(c *gin.Context) {
-	result := util.NewResult()
+	result := gulu.Ret.NewResult()
 	defer c.JSON(http.StatusOK, result)
 
 	session := util.GetSession(c)
-	if nil == session {
-		result.Code = -1
+	if 0 == session.UID {
+		result.Code = util.CodeErr
 		result.Msg = "please login before import"
 
 		return
@@ -45,7 +46,7 @@ func ImportMarkdownAction(c *gin.Context) {
 	if nil != err {
 		msg := "parse upload file header failed"
 		logger.Errorf(msg + ": " + err.Error())
-		result.Code = -1
+		result.Code = util.CodeErr
 		result.Msg = msg
 
 		return
@@ -56,7 +57,7 @@ func ImportMarkdownAction(c *gin.Context) {
 	if nil != err {
 		msg := "open upload file failed"
 		logger.Errorf(msg + ": " + err.Error())
-		result.Code = -1
+		result.Code = util.CodeErr
 		result.Msg = msg
 
 		return
@@ -69,7 +70,7 @@ func ImportMarkdownAction(c *gin.Context) {
 	zipFile, err := os.Create(zipFilePath)
 	if nil != err {
 		logger.Errorf("create temp file [" + zipFilePath + "] failed: " + err.Error())
-		result.Code = -1
+		result.Code = util.CodeErr
 		result.Msg = "create temp file failed"
 
 		return
@@ -77,7 +78,7 @@ func ImportMarkdownAction(c *gin.Context) {
 	_, err = io.Copy(zipFile, f)
 	if nil != err {
 		logger.Errorf("write temp file [" + zipFilePath + "] failed: " + err.Error())
-		result.Code = -1
+		result.Code = util.CodeErr
 		result.Msg = "write temp file failed"
 
 		return
@@ -87,21 +88,21 @@ func ImportMarkdownAction(c *gin.Context) {
 	unzipPath := filepath.Join(tempDir, session.UName+"-import-md")
 	if err = os.RemoveAll(unzipPath); nil != err {
 		logger.Errorf("remove temp dir [" + unzipPath + "] failed: " + err.Error())
-		result.Code = -1
+		result.Code = util.CodeErr
 		result.Msg = "remove temp dir failed"
 
 		return
 	}
 	if err = os.Mkdir(unzipPath, 0755); nil != err {
 		logger.Errorf("make temp dir [" + unzipPath + "] failed: " + err.Error())
-		result.Code = -1
+		result.Code = util.CodeErr
 		result.Msg = "make temp dir failed"
 
 		return
 	}
-	if err = util.Zip.Unzip(zipFilePath, unzipPath); nil != err {
+	if err = gulu.Zip.Unzip(zipFilePath, unzipPath); nil != err {
 		logger.Errorf("unzip [" + zipFilePath + "] to [" + unzipPath + "] failed: " + err.Error())
-		result.Code = -1
+		result.Code = util.CodeErr
 		result.Msg = "unzip failed"
 
 		return
@@ -119,7 +120,7 @@ func ImportMarkdownAction(c *gin.Context) {
 	})
 	if nil != err {
 		logger.Errorf("read dir [" + unzipPath + "] failed: " + err.Error())
-		result.Code = -1
+		result.Code = util.CodeErr
 		result.Msg = "read dir failed"
 
 		return

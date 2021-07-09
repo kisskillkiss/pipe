@@ -1,5 +1,5 @@
 // Pipe - A small and beautiful blogging platform written in golang.
-// Copyright (C) 2017-2018, b3log.org
+// Copyright (C) 2017-present, b3log.org
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -19,6 +19,7 @@ package controller
 import (
 	"net/http"
 
+	"github.com/b3log/gulu"
 	"github.com/b3log/pipe/model"
 	"github.com/b3log/pipe/service"
 	"github.com/b3log/pipe/util"
@@ -40,12 +41,12 @@ type Status struct {
 }
 
 func getStatusAction(c *gin.Context) {
-	result := util.NewResult()
+	result := gulu.Ret.NewResult()
 	defer c.JSON(http.StatusOK, result)
 
 	platformStatus, err := service.Init.Status()
 	if nil != err {
-		result.Code = -1
+		result.Code = util.CodeErr
 		result.Msg = err.Error()
 
 		return

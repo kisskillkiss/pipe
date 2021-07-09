@@ -1,5 +1,5 @@
 // Pipe - A small and beautiful blogging platform written in golang.
-// Copyright (C) 2017-2018, b3log.org
+// Copyright (C) 2017-present, b3log.org
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,9 +17,11 @@
 package service
 
 import (
+	"errors"
 	"sync"
 
 	"github.com/b3log/pipe/model"
+	"github.com/b3log/pipe/util"
 )
 
 // Tag service.
@@ -29,6 +31,33 @@ var Tag = &tagService{
 
 type tagService struct {
 	mutex *sync.Mutex
+}
+
+const (
+	adminConsoleTagListPageSize   = 15
+	adminConsoleTagListWindowSize = 20
+)
+
+func (srv *tagService) ConsoleGetTags(keyword string, page int, blogID uint64) (ret []*model.Tag, pagination *util.Pagination) {
+	offset := (page - 1) * adminConsoleTagListPageSize
+	count := 0
+
+	where := "`blog_id` = ?"
+	whereArgs := []interface{}{blogID}
+	if "" != keyword {
+		where += " AND `title` LIKE ?"
+		whereArgs = append(whereArgs, "%"+keyword+"%")
+	}
+
+	if err := db.Model(&model.Tag{}).Order("`id` DESC").
+		Where(where, whereArgs...).
+		Count(&count).Offset(offset).Limit(adminConsoleTagListPageSize).Find(&ret).Error; nil != err {
+		logger.Errorf("get tags failed: " + err.Error())
+	}
+
+	pagination = util.NewPagination(page, adminConsoleTagListPageSize, adminConsoleTagListWindowSize, count)
+
+	return
 }
 
 func (srv *tagService) GetTags(size int, blogID uint64) (ret []*model.Tag) {
@@ -46,4 +75,29 @@ func (srv *tagService) GetTagByTitle(title string, blogID uint64) *model.Tag {
 	}
 
 	return ret
+}
+
+func (srv *tagService) RemoveTag(id, blogID uint64) (err error) {
+	tag := &model.Tag{}
+	if err := db.Where("`id` = ? AND `blog_id` = ?", id, blogID).Find(tag).Error; nil != err {
+		return err
+	}
+
+	if 0 < tag.ArticleCount {
+		return errors.New("can not remove tags that have articles")
+	}
+
+	tagTitle := tag.Title
+	categories := Category.GetCategoriesByTag(tagTitle, blogID)
+	if 0 < len(categories) {
+		return errors.New("can not remove tags in a category")
+	}
+
+	if err = db.Delete(&tag).Error; nil != err {
+		logger.Errorf("delete tag [" + tagTitle + "] failed: " + err.Error())
+
+		return
+	}
+
+	return nil
 }

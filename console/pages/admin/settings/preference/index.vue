@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div class="card fn-clear card__body">
+    <div class="card fn__clear card__body">
 
       <v-form ref="form">
         <v-select
@@ -45,13 +45,19 @@
           required
           :rules="requiredRules"
         ></v-text-field>
+        <v-text-field
+          :label="$t('recommendArticleListSize', $store.state.locale)"
+          v-model="preferenceRecommendArticleListSize"
+          required
+          :rules="requiredRules"
+        ></v-text-field>
 
         <div class="alert alert--danger" v-show="error">
           <v-icon>danger</v-icon>
           <span>{{ errorMsg }}</span>
         </div>
       </v-form>
-      <v-btn class="fn-right btn--margin-t30 btn--info btn--space" @click="update">
+      <v-btn class="fn__right btn--margin-t30 btn--info btn--space" @click="update">
         {{ $t('confirm', $store.state.locale) }}
       </v-btn>
     </div>
@@ -84,6 +90,7 @@
         preferenceMostViewArticleListSize: 10,
         preferenceArticleListPageSize: 15,
         preferenceArticleListWindowSize: 20,
+        preferenceRecommendArticleListSize: 0,
         error: false,
         errorMsg: ''
       }
@@ -105,7 +112,8 @@
           preferenceMostCommentArticleListSize: this.preferenceMostCommentArticleListSize,
           preferenceMostViewArticleListSize: this.preferenceMostViewArticleListSize,
           preferenceArticleListPageSize: this.preferenceArticleListPageSize,
-          preferenceArticleListWindowSize: this.preferenceArticleListWindowSize
+          preferenceArticleListWindowSize: this.preferenceArticleListWindowSize,
+          preferenceRecommendArticleListSize: this.preferenceRecommendArticleListSize
         })
 
         if (responseData.code === 0) {
@@ -132,6 +140,7 @@
         this.$set(this, 'preferenceMostViewArticleListSize', responseData.preferenceMostViewArticleListSize)
         this.$set(this, 'preferenceArticleListPageSize', responseData.preferenceArticleListPageSize)
         this.$set(this, 'preferenceArticleListWindowSize', responseData.preferenceArticleListWindowSize)
+        this.$set(this, 'preferenceRecommendArticleListSize', responseData.preferenceRecommendArticleListSize)
       }
     }
   }

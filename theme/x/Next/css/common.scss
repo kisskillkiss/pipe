@@ -1,16 +1,12 @@
 /**
- * skin Next style
+ * skin style
  *
  * @author <a href="http://vanessa.b3log.org">Liyuan Li</a>
- * @version 0.1.1.0, Jan 18, 2018
+ * @version 0.2.1.1, Sep 9, 2018
 */
-@import '../../../scss/basic';
-@import '../../../scss/github';
 
-// variable
-$text-color: #555;
-$text-hover-color: #222;
-$transition: all .2s ease-in-out;
+@import 'variables';
+@import '../../../scss/basic';
 
 // reset
 html {
@@ -30,12 +26,6 @@ body {
 ::selection {
   background: #262a30;
   color: #fff;
-}
-
-.pipe-content__reset {
-  pre > code {
-    background-image: url(../../../images/code-bg.png);
-  }
 }
 
 a {
@@ -408,7 +398,7 @@ a:hover {
 .header {
   background: #f5f5f5;
   margin-bottom: 80px;
-  padding: 40px 0;
+  padding: 40px 0 20px;
 
   &__logo {
     position: relative;
@@ -417,6 +407,7 @@ a:hover {
     border-bottom-width: 0;
     color: #222;
     float: left;
+    margin-bottom: 20px;
 
     div {
       opacity: 0;
@@ -556,6 +547,7 @@ a:hover {
     @include image-bg('../../../images/image-bg.svg');
     border-bottom: 0;
     margin-bottom: 10px;
+    font-size: 0;
   }
 
   &__footer {
@@ -929,7 +921,7 @@ a:hover {
 
 @media (max-width: 768px) {
   .header {
-    padding: 20px 0;
+    padding: 20px 0 0;
     margin-bottom: 20px;
     nav {
       display: none;
@@ -953,7 +945,7 @@ a:hover {
   .footer {
     margin-top: 20px;
     padding: 20px 0;
-    .fn-right {
+    .fn__right {
       float: none;
     }
   }

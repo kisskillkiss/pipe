@@ -1,5 +1,5 @@
 // Pipe - A small and beautiful blogging platform written in golang.
-// Copyright (C) 2017-2018, b3log.org
+// Copyright (C) 2017-present, b3log.org
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,7 +17,6 @@
 package main
 
 import (
-	"fmt"
 	"io"
 	"io/ioutil"
 	"math/rand"
@@ -29,29 +28,27 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/b3log/gulu"
 	"github.com/b3log/pipe/controller"
 	"github.com/b3log/pipe/cron"
 	"github.com/b3log/pipe/i18n"
-	"github.com/b3log/pipe/log"
+	"github.com/b3log/pipe/model"
 	"github.com/b3log/pipe/service"
 	"github.com/b3log/pipe/theme"
-	"github.com/b3log/pipe/util"
 	"github.com/gin-gonic/gin"
-	"github.com/b3log/pipe/model"
 )
 
 // Logger
-var logger *log.Logger
+var logger *gulu.Logger
 
 // The only one init function in pipe.
 func init() {
 	rand.Seed(time.Now().UTC().UnixNano())
 
-	log.SetLevel("warn")
-	logger = log.NewLogger(os.Stdout)
+	gulu.Log.SetLevel("warn")
+	logger = gulu.Log.NewLogger(os.Stdout)
 
 	model.LoadConf()
-	util.LoadMarkdown()
 	i18n.Load()
 	theme.Load()
 	replaceServerConf()
@@ -79,7 +76,9 @@ func main() {
 	handleSignal(server)
 
 	logger.Infof("Pipe (v%s) is running [%s]", model.Version, model.Conf.Server)
-	server.ListenAndServe()
+	if err := server.ListenAndServe(); nil != err {
+		logger.Fatalf("listen and serve failed: " + err.Error())
+	}
 }
 
 // handleSignal handles system signal for graceful shutdown.
@@ -102,91 +101,35 @@ func handleSignal(server *http.Server) {
 }
 
 func replaceServerConf() {
-	err := filepath.Walk(filepath.ToSlash(filepath.Join(model.Conf.StaticRoot, "theme")), func(path string, f os.FileInfo, err error) error {
-		if strings.HasSuffix(path, ".min.js") {
-			data, e := ioutil.ReadFile(path)
-			if nil != e {
-				logger.Fatal("read file [" + path + "] failed: " + err.Error())
-			}
-			content := string(data)
-			if !strings.Contains(content, "exports={Server:") {
-				return err
-			}
-
-			json := "{Server:" + strings.Split(content, "{Server:")[1]
-			json = strings.Split(json, "}}")[0] + "}"
-			newJSON := "{Server:\"" + model.Conf.Server + "\",StaticServer:\"" + model.Conf.StaticServer + "\",StaticResourceVersion:\"" +
-				model.Conf.StaticResourceVersion + "\",RuntimeMode:\"" + model.Conf.RuntimeMode + "\",AxiosBaseURL:\"" + model.Conf.AxiosBaseURL +
-				"\",MockServer:\"" + model.Conf.MockServer + "\"}"
-			content = strings.Replace(content, json, newJSON, -1)
-			if e = ioutil.WriteFile(path, []byte(content), 0644); nil != e {
-				logger.Fatal("replace server conf in [" + path + "] failed: " + err.Error())
-			}
+	path := "theme/sw.min.js.tpl"
+	if gulu.File.IsExist(path) {
+		data, err := ioutil.ReadFile(path)
+		if nil != err {
+			logger.Fatal("read file [" + path + "] failed: " + err.Error())
 		}
-
-		return err
-	})
-	if nil != err {
-		logger.Fatal("replace server conf in [theme] failed: " + err.Error())
-	}
-
-	paths, err := filepath.Glob(filepath.ToSlash(filepath.Join(model.Conf.StaticRoot, "console/dist/*.js")))
-	if 0 < len(paths) {
-		for _, path := range paths {
-			data, e := ioutil.ReadFile(path)
-			if nil != e {
-				logger.Fatal("read file [" + path + "] failed: " + err.Error())
-			}
-			content := string(data)
-			if strings.Contains(content, "{rel:\"manifest") {
-				json := "{rel:\"manifest\",href:\"" + strings.Split(content, "{rel:\"manifest\",href:\"")[1]
-				json = strings.Split(json, "}]")[0] + "}"
-				newJSON := "{rel:\"manifest\",href:\"" + model.Conf.StaticServer + "/theme/js/manifest.json\"}"
-				content = strings.Replace(content, json, newJSON, -1)
-			}
-			if strings.Contains(content, "env:{Server:") {
-				json := "env:{Server:" + strings.Split(content, "env:{Server:")[1]
-				json = strings.Split(json, "}}")[0] + "}"
-				newJSON := "env:{Server:\"" + model.Conf.Server + "\",StaticServer:\"" + model.Conf.StaticServer + "\",StaticResourceVersion:\"" +
-					model.Conf.StaticResourceVersion + "\",RuntimeMode:\"" + model.Conf.RuntimeMode + "\",AxiosBaseURL:\"" + model.Conf.AxiosBaseURL +
-					"\",MockServer:\"" + model.Conf.MockServer + "\"}"
-				content = strings.Replace(content, json, newJSON, -1)
-			}
-			if strings.Contains(content, "/console/dist/") {
-				part := strings.Split(content, "/console/dist/")[0]
-				part = part[strings.LastIndex(part, "\"")+1:]
-				content = strings.Replace(content, part, model.Conf.StaticServer, -1)
-			}
-			if e = ioutil.WriteFile(path, []byte(content), 0644); nil != e {
-				logger.Fatal("replace server conf in [" + path + "] failed: " + err.Error())
-			}
+		content := string(data)
+		content = strings.Replace(content, "http://server.tpl.json", model.Conf.Server, -1)
+		content = strings.Replace(content, "http://staticserver.tpl.json", model.Conf.StaticServer, -1)
+		content = strings.Replace(content, "${StaticResourceVersion}", model.Conf.StaticResourceVersion, -1)
+		writePath := strings.TrimSuffix(path, ".tpl")
+		if err = ioutil.WriteFile(writePath, []byte(content), 0644); nil != err {
+			logger.Fatal("replace sw.min.js in [" + path + "] failed: " + err.Error())
 		}
 	}
 
-	if util.File.IsExist("console/dist/") { // dose not exist if npm run dev
-		err = filepath.Walk(filepath.ToSlash(filepath.Join(model.Conf.StaticRoot, "console/dist/")), func(path string, f os.FileInfo, err error) error {
-			if strings.HasSuffix(path, ".html") {
-				data, e := ioutil.ReadFile(path)
-				if nil != e {
+	if gulu.File.IsExist("console/dist/") {
+		err := filepath.Walk("console/dist/", func(path string, f os.FileInfo, err error) error {
+			if strings.HasSuffix(path, ".tpl") {
+				data, err := ioutil.ReadFile(path)
+				if nil != err {
 					logger.Fatal("read file [" + path + "] failed: " + err.Error())
 				}
 				content := string(data)
-				if strings.Contains(content, "rel=\"manifest\" href=\"") {
-					rel := "rel=\"manifest\" href=\"" + strings.Split(content, "rel=\"manifest\" href=\"")[1]
-					rel = strings.Split(rel, "/>")[0] + "/>"
-					newRel := "rel=\"manifest\" href=\"" + model.Conf.StaticServer + "/theme/js/manifest.json\"/>"
-					content = strings.Replace(content, rel, newRel, -1)
-				}
-				if strings.Contains(content, "/console/dist/") {
-					part := strings.Split(content, "/console/dist/")[0]
-					part = part[strings.LastIndex(part, "\"")+1:]
-					content = strings.Replace(content, part, model.Conf.StaticServer, -1)
-				}
-				v := fmt.Sprintf("%d", time.Now().Unix())
-				content = strings.Replace(content, ".js\"", ".js?"+v+"\"", -1)
-				content = strings.Replace(content, ".json\"", ".json?"+v+"\"", -1)
-				if e = ioutil.WriteFile(path, []byte(content), 0644); nil != e {
-					logger.Fatal("replace server conf in [" + path + "] failed: " + err.Error())
+				content = strings.Replace(content, "http://server.tpl.json", model.Conf.Server, -1)
+				content = strings.Replace(content, "http://staticserver.tpl.json", model.Conf.StaticServer, -1)
+				writePath := strings.TrimSuffix(path, ".tpl")
+				if err = ioutil.WriteFile(writePath, []byte(content), 0644); nil != err {
+					logger.Fatal("replace server conf in [" + writePath + "] failed: " + err.Error())
 				}
 			}
 

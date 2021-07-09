@@ -1,5 +1,5 @@
 // Pipe - A small and beautiful blogging platform written in golang.
-// Copyright (C) 2017-2018, b3log.org
+// Copyright (C) 2017-present, b3log.org
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -160,14 +160,14 @@ func TestIncArticleViewCount(t *testing.T) {
 }
 
 func TestNormalizeTagStr(t *testing.T) {
-	tagStr, err := normalizeTagStr("带 空 格1,分号2；顿号3、正常4")
-	if nil != err {
-		t.Error(err)
-
-		return
-	}
+	tagStr := normalizeTagStr("带 空 格1,分号2；顿号3、正常4")
 	if "带空格1,分号2,顿号3,正常4" != tagStr {
 		t.Errorf("exptected is [%s], actual is [%s]", "带空格1,分号2,顿号3,正常4", tagStr)
+	}
+
+	tagStr = normalizeTagStr("")
+	if "待分类" != tagStr {
+		t.Errorf("exptected is [%s], actual is [%s]", "待分类", tagStr)
 	}
 }
 

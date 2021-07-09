@@ -1,5 +1,5 @@
 // Pipe - A small and beautiful blogging platform written in golang.
-// Copyright (C) 2017-2018, b3log.org
+// Copyright (C) 2017-present, b3log.org
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -37,8 +37,9 @@ func TestGetSetting(t *testing.T) {
 
 func TestGetAllSettings(t *testing.T) {
 	settings := Setting.GetAllSettings(1)
-	if 25 != len(settings) {
-		t.Errorf("expected is [%d], actual is [%d]", 24, len(settings))
+	settingsCount := 27
+	if settingsCount != len(settings) {
+		t.Errorf("expected is [%d], actual is [%d]", settingsCount, len(settings))
 	}
 }
 

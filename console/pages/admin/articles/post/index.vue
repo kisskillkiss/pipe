@@ -1,6 +1,6 @@
 <template>
   <div class="card">
-    <div class="card__body fn-clear">
+    <div class="card__body fn__clear">
       <v-form ref="form">
         <v-text-field
           :label="$t('title', $store.state.locale)"
@@ -11,14 +11,7 @@
           @change="setLocalstorage('title')"
         ></v-text-field>
 
-        <v-editor
-          :uploadURL="`/upload`"
-          :uploadMax="10"
-          :height="300"
-          :value="content"
-          :label="label"
-          :fetchUpload="fetchUpload"
-          @change="parseMarkdown"></v-editor>
+        <div id="contentEditor" style="height: 480px;background-color: #f6f8fa"></div>
 
         <v-select
           v-model="tags"
@@ -26,8 +19,6 @@
           chips
           tags
           :items="$store.state.tagsItems"
-          required
-          :rules="tagsRules"
           @change="setLocalstorage"
         ></v-select>
 
@@ -46,12 +37,7 @@
           @keyup="setLocalstorage('time')"
         ></v-text-field>
 
-        <v-text-field
-          :label="$t('abstract', $store.state.locale)"
-          v-model="abstract"
-          multi-line
-          @keyup="setLocalstorage('abstract')"
-        ></v-text-field>
+        <div id="abstractEditor" style="height: 160px;background-color: #f6f8fa"></div>
 
         <label class="checkbox">
           <input
@@ -82,6 +68,16 @@
           class="checkbox__icon"></span>
           {{ $t('top', $store.state.locale) }}
         </label>
+        <label class="checkbox btn--space">
+          <input
+            type="checkbox"
+            :checked="syncToCommunity"
+            @change="setLocalstorage('syncToCommunity')"
+            @click="syncToCommunity = !syncToCommunity"/><span
+          class="checkbox__icon"></span>
+          {{ $t('syncToCommunity', $store.state.locale) }}
+          (<a href="https://hacpai.com/article/1546941897596" target="_blank">?</a>)
+        </label>
       </v-form>
       <div class="alert alert--danger" v-show="error">
         <v-icon>danger</v-icon>
@@ -102,15 +98,14 @@
           @click="getThumbs"><v-icon>refresh</v-icon></span>
       </div>
 
-      <div class="fn-right">
+      <div class="fn__right">
         <v-btn @click="remove" class="btn--danger btn--margin-t30" v-if="$route.query.id">
           {{ $t('delete', $store.state.locale) }}
         </v-btn>
         <v-btn @click="edit($route.query.id)" class="btn--info btn--space btn--margin-t30" v-if="$route.query.id">
           {{ $t('submit', $store.state.locale) }}
         </v-btn>
-        <v-btn @click="edit()" class="btn--info btn--margin-t30" v-else>{{ $t('publish', $store.state.locale)
-          }}
+        <v-btn @click="edit()" class="btn--info btn--margin-t30" v-else>{{ $t('publish', $store.state.locale) }}
         </v-btn>
       </div>
     </div>
@@ -118,149 +113,128 @@
 </template>
 
 <script>
-  import {required, maxSize} from '~/plugins/validate'
-  import {asyncLoadScript, LazyLoadImage} from '~/plugins/utils'
+  import { required, maxSize } from '~/plugins/validate'
+  import { LazyLoadImage } from '~/plugins/utils'
+  import Vditor from 'vditor'
 
   export default {
     data () {
       return {
-        label: {
-          loading: this.$t('uploading', this.$store.state.locale),
-          error: this.$t('uploadError', this.$store.state.locale),
-          over: this.$t('uploadOver', this.$store.state.locale),
-          emoji: this.$t('emoji', this.$store.state.locale) + ' <ctrl+/>',
-          bold: this.$t('bold', this.$store.state.locale) + ' <ctrl+b>',
-          italic: this.$t('italic', this.$store.state.locale) + ' <ctrl+i>',
-          quote: this.$t('quote', this.$store.state.locale) + ' <ctrl+e>',
-          link: this.$t('link', this.$store.state.locale) + ' <ctrl+k>',
-          upload: this.$t('upload', this.$store.state.locale),
-          unorderedList: this.$t('unorderedList', this.$store.state.locale) + ' <ctrl+l>',
-          orderedList: this.$t('orderedList', this.$store.state.locale) + ' <ctrl+shift+k>',
-          preview: this.$t('preview', this.$store.state.locale) + ' <ctrl+d>',
-          fullscreen: this.$t('fullscreen', this.$store.state.locale) + ' <ctrl+shift+a>',
-          help: this.$t('question', this.$store.state.locale)
+        tokenURL: {
+          URL: '',
+          token: '',
         },
         error: false,
         errorMsg: '',
         content: '',
+        originalContent: '',
         title: '',
         titleRules: [
           (v) => required.call(this, v),
-          (v) => maxSize.call(this, v, 128)
+          (v) => maxSize.call(this, v, 128),
         ],
         linkRules: [
-          (v) => maxSize.call(this, v, 255)
-        ],
-        tagsRules: [
-          (v) => this.tags.length > 0 || this.$t('required', this.$store.state.locale)
+          (v) => maxSize.call(this, v, 255),
         ],
         timeRules: [
-          (v) => (v.length === 0 || /^(((20[0-3][0-9]-(0[13578]|1[02])-(0[1-9]|[12][0-9]|3[01]))|(20[0-3][0-9]-(0[2469]|11)-(0[1-9]|[12][0-9]|30))) (20|21|22|23|[0-1][0-9]):[0-5][0-9]:[0-5][0-9])$/.test(v)) || this.$t('createdTime', this.$store.state.locale) + '[YYYY-MM-DD HH:mm:ss]'
+          (v) => (v.length === 0 ||
+            /^(((20[0-3][0-9]-(0[13578]|1[02])-(0[1-9]|[12][0-9]|3[01]))|(20[0-3][0-9]-(0[2469]|11)-(0[1-9]|[12][0-9]|30))) (20|21|22|23|[0-1][0-9]):[0-5][0-9]:[0-5][0-9])$/.test(
+              v)) || this.$t('createdTime', this.$store.state.locale) + '[YYYY-MM-DD HH:mm:ss]',
         ],
         url: '',
         time: '',
-        abstract: '',
+        abstractEditor: '',
+        contentEditor: '',
         tags: [],
         commentable: true,
         useThumbs: false,
         topped: false,
-        thumbs: ['', '', '', '', '', '']
+        syncToCommunity: true,
+        thumbs: ['', '', '', '', '', ''],
+        edited: false,
       }
     },
     head () {
       return {
-        title: `${this.$t(this.$route.query.id ? 'editArticle' : 'postArticle', this.$store.state.locale)} - ${this.$store.state.blogTitle}`
+        title: `${this.$t(this.$route.query.id ? 'editArticle' : 'postArticle',
+          this.$store.state.locale)} - ${this.$store.state.blogTitle}`,
+      }
+    },
+    watch: {
+      '$route.query.id': function (newValue, oldValue) {
+        if (typeof newValue === 'undefined' && oldValue) {
+          this._setDefaultLocalStorage()
+          this.abstractEditor.enableCache()
+          this.contentEditor.enableCache()
+        } else {
+          this.abstractEditor.disabledCache()
+          this.contentEditor.disabledCache()
+        }
+      },
+    },
+    beforeRouteUpdate (to, from, next) {
+      if (from.query.id && from.path === '/admin/articles/post' &&
+        (this.edited || this.originalContent !== this.contentEditor.getValue())) {
+        if (confirm(this.$t('isGoTo', this.$store.state.locale))) {
+          next()
+        }
+      } else {
+        next()
+      }
+    },
+    beforeRouteLeave (to, from, next) {
+      if (from.query.id && from.path === '/admin/articles/post' &&
+        (this.edited || this.originalContent !== this.contentEditor.getValue())) {
+        if (confirm(this.$t('isGoTo', this.$store.state.locale))) {
+          next()
+        }
+      } else {
+        next()
       }
     },
     methods: {
-      async fetchUpload (url, succCB) {
-        const responseData = await this.axios.post(`${this.$store.state.blogURL}/fetch-upload`, {
-          url
+      _initEditor (data) {
+        return new Vditor(data.id, {
+          typewriterMode: true,
+          tab: '\t',
+          cache: this.$route.query.id ? false : true,
+          preview: {
+            delay: 500,
+            mode: data.mode,
+            url: `${process.env.Server}/api/console/markdown`,
+            parse: (element) => {
+              if (element.style.display === 'none') {
+                return
+              }
+              LazyLoadImage()
+              Vditor.highlightRender({
+                style: 'github',
+                enable: false,
+              }, document)
+            },
+          },
+          upload: {
+            max: 10 * 1024 * 1024,
+            url: this.tokenURL.URL,
+            token: this.tokenURL.token,
+            filename: name => name.replace(/[^(a-zA-Z0-9\u4e00-\u9fa5\.)]/g, '').
+              replace(/[\?\\/:|<>\*\[\]\(\)\$%\{\}@~]/g, '').
+              replace('/\\s/g', ''),
+          },
+          height: data.height,
+          counter: 102400,
+          resize: {
+            enable: data.resize,
+          },
+          lang: this.$store.state.locale,
+          placeholder: data.placeholder,
         })
-        if (responseData.code === 0) {
-          succCB(responseData.data.originalURL, responseData.data.url)
-        } else {
-          this.$store.commit('setSnackBar', {
-            snackBar: true,
-            snackMsg: responseData.msg
-          })
-        }
-      },
-      _paseMD (text, previewRef) {
-        previewRef.innerHTML = `<div class="pipe-content__reset">${text}</div>`
-        LazyLoadImage()
-        let hasMathJax = false
-        let hasFlow = false
-        if (text.split('$').length > 2 ||
-          (text.split('\\(').length > 1 &&
-            text.split('\\)').length > 1)) {
-          hasMathJax = true
-        }
-
-        if (text.indexOf('<code class="language-flow"') > -1) {
-          hasFlow = true
-        }
-        if (hasMathJax) {
-          if (typeof MathJax !== 'undefined') {
-            window.MathJax.Hub.Typeset()
-          } else {
-            asyncLoadScript('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/MathJax.js?config=TeX-MML-AM_CHTML',
-              () => {
-                window.MathJax.Hub.Config({
-                  tex2jax: {
-                    inlineMath: [['$', '$'], ['\\(', '\\)']],
-                    displayMath: [['$$', '$$']],
-                    processEscapes: true,
-                    processEnvironments: true,
-                    skipTags: ['pre', 'code', 'script']
-                  }
-                })
-              })
-          }
-        }
-
-        if (hasFlow) {
-          const initFlow = function () {
-            document.querySelectorAll('.pipe-content__reset .language-flow').forEach(function (it, index) {
-              const id = 'pipeFlow' + (new Date()).getTime() + index
-              it.style.display = 'none'
-              const diagram = window.flowchart.parse(it.textContent)
-              it.parentElement.outerHTML = `<div class="ft-center" id="${id}"></div>`
-              diagram.drawSVG(id)
-              document.getElementById(id).firstChild.style.height = 'auto'
-              document.getElementById(id).firstChild.style.width = 'auto'
-            })
-          }
-
-          if (typeof (flowchart) !== 'undefined') {
-            initFlow()
-          } else {
-            asyncLoadScript((process.env.StaticServer || process.env.Server) + '/theme/js/lib/flowchart.min.js', initFlow)
-          }
-        }
-      },
-      async parseMarkdown (value, previewRef) {
-        this.$set(this, 'content', value)
-        this.setLocalstorage('content')
-        if (previewRef) {
-          if (value.replace(/(^\s*)|(\s*)$/g, '') === '') {
-            this._paseMD('', previewRef)
-            return
-          }
-          const responseData = await this.axios.post('/console/markdown', {
-            mdText: value
-          })
-          if (responseData.code === 0) {
-            this._paseMD(responseData.data.html, previewRef)
-          } else {
-            this.$store.commit('setSnackBar', {
-              snackBar: true,
-              snackMsg: responseData.msg
-            })
-          }
-        }
       },
       setLocalstorage (type) {
+        if (type !== 'content') {
+          this.$set(this, 'edited', true)
+        }
+
         if (this.$route.query.id) {
           return
         }
@@ -279,27 +253,24 @@
           case 'time':
             localStorage.setItem('article-time', this.time)
             break
-          case 'abstract':
-            localStorage.setItem('article-abstract', this.abstract)
-            break
           case 'commentable':
             localStorage.setItem('article-commentable', this.commentable)
             break
           case 'useThumbs':
             localStorage.setItem('article-useThumbs', this.useThumbs)
             break
+          case 'syncToCommunity':
+            localStorage.setItem('article-syncToCommunity', this.syncToCommunity)
+            break
           case 'topped':
             localStorage.setItem('article-topped', this.topped)
-            break
-          case 'content':
-            localStorage.setItem('article-content', this.content)
             break
           default:
             break
         }
       },
       async getThumbs () {
-        const responseData = await this.axios.get(`console/thumbs?n=5&w=768&h=180`)
+        const responseData = await this.axios.get('console/thumbs?n=5&w=768&h=432')
         if (responseData) {
           this.$set(this, 'thumbs', responseData)
         }
@@ -308,13 +279,21 @@
         if (!this.$refs.form.validate()) {
           return
         }
+        if (this.contentEditor.getValue().length > 102400) {
+          this.contentEditor.focus()
+          return
+        }
+        if (this.abstractEditor.getValue().length > 102400) {
+          this.abstractEditor.focus()
+          return
+        }
 
-        let content = this.content
+        let content = this.contentEditor.getValue()
         if (this.useThumbs) {
           document.querySelectorAll('.carousel__item').forEach((item, index) => {
             if (item.style.display !== 'none') {
               content = `![](${this.thumbs[index].replace('imageView2/1/w/768/h/180/interlace/1/q/100',
-                'imageView2/1/w/960/h/520/interlace/1/q/100')})\n\n` + content
+                'imageView2/1/w/960/h/540/interlace/1/q/100')})\n\n` + content
             }
           })
         }
@@ -325,23 +304,29 @@
           tags: this.tags.toString(),
           commentable: this.commentable,
           topped: this.topped,
-          abstract: this.abstract,
-          time: this.time === '' ? '' : this.time.replace(' ', 'T') + '+08:00'
+          abstract: this.abstractEditor.getValue(),
+          syncToCommunity: this.syncToCommunity,
+          time: this.time === '' ? '' : this.time.replace(' ', 'T') + '+08:00',
         })
         if (responseData.code === 0) {
           if (!id) {
             localStorage.removeItem('article-title')
-            localStorage.removeItem('article-content')
             localStorage.removeItem('article-tags')
             localStorage.removeItem('article-url')
             localStorage.removeItem('article-time')
-            localStorage.removeItem('article-abstract')
             localStorage.removeItem('article-commentable')
             localStorage.removeItem('article-useThumbs')
+            localStorage.removeItem('article-syncToCommunity')
             localStorage.removeItem('article-topped')
+            this.contentEditor.setValue('')
+            this.abstractEditor.setValue('')
           }
           this.$set(this, 'error', false)
           this.$set(this, 'errorMsg', '')
+          if (id) {
+            this.$set(this, 'edited', false)
+            this.$set(this, 'originalContent', this.contentEditor.getValue())
+          }
           this.$router.push('/admin/articles')
         } else {
           this.$set(this, 'error', true)
@@ -357,73 +342,142 @@
           this.$store.commit('setSnackBar', {
             snackBar: true,
             snackMsg: this.$t('deleteSuccess', this.$store.state.locale),
-            snackModify: 'success'
+            snackModify: 'success',
           })
           this.$router.push('/admin/articles')
+          this.contentEditor.setValue('')
+          this.abstractEditor.setValue('')
         }
-      }
+      },
+      _setDefaultLocalStorage () {
+        if (localStorage.getItem('article-title')) {
+          this.title = localStorage.getItem('article-title')
+          this.$set(this, 'title', localStorage.getItem('article-title'))
+        } else {
+          this.$set(this, 'title', '')
+        }
+        if (localStorage.getItem('vditorcontentEditor')) {
+          this.$set(this, 'originalContent', localStorage.getItem('vditorcontentEditor'))
+          this.contentEditor.setValue(localStorage.getItem('vditorcontentEditor'))
+        } else {
+          this.$set(this, 'originalContent', '')
+          this.contentEditor.setValue('')
+        }
+        if (localStorage.getItem('vditorabstractEditor')) {
+          this.abstractEditor.setValue(localStorage.getItem('vditorabstractEditor'))
+        } else {
+          this.abstractEditor.setValue('')
+        }
+        if (localStorage.getItem('article-tags')) {
+          this.$set(this, 'tags', localStorage.getItem('article-tags').split(','))
+        } else {
+          this.$set(this, 'tags', [])
+        }
+        if (localStorage.getItem('article-url')) {
+          this.$set(this, 'url', localStorage.getItem('article-url'))
+        } else {
+          this.$set(this, 'url', '')
+        }
+        if (localStorage.getItem('article-time')) {
+          this.$set(this, 'time', localStorage.getItem('article-time'))
+        } else {
+          this.$set(this, 'time', '')
+        }
+        if (localStorage.getItem('article-commentable')) {
+          this.$set(this, 'commentable', localStorage.getItem('article-commentable') === 'true')
+        } else {
+          this.$set(this, 'commentable', true)
+        }
+        if (localStorage.getItem('article-useThumbs')) {
+          this.$set(this, 'useThumbs', localStorage.getItem('article-useThumbs') === 'true')
+        } else {
+          this.$set(this, 'useThumbs', false)
+        }
+        if (localStorage.getItem('article-syncToCommunity')) {
+          this.$set(this, 'syncToCommunity', localStorage.getItem('article-syncToCommunity') === 'true')
+        } else {
+          this.$set(this, 'syncToCommunity', true)
+        }
+        if (localStorage.getItem('article-topped')) {
+          this.$set(this, 'topped', localStorage.getItem('article-topped') === 'true')
+        } else {
+          this.$set(this, 'topped', false)
+        }
+        setTimeout(() => {
+          document.querySelector('.input-group__input input').focus()
+        }, 100)
+      },
     },
     async mounted () {
+      const responseData = await this.axios.get('console/upload/token')
+      if (responseData) {
+        this.$set(this, 'tokenURL', {
+          token: responseData.uploadToken || '',
+          URL: responseData.uploadURL || '',
+        })
+      }
+
+      this.contentEditor = this._initEditor({
+        id: 'contentEditor',
+        mode: 'both',
+        height: 480,
+        placeholder: this.$t('inputContent', this.$store.state.locale),
+        resize: false,
+      })
+
+      this.abstractEditor = this._initEditor({
+        id: 'abstractEditor',
+        height: 160,
+        mode: 'editor',
+        placeholder: this.$t('inputAbstract', this.$store.state.locale),
+        resize: true,
+      })
+
       const id = this.$route.query.id
+
+      window.onbeforeunload = (event) => {
+        if ((this.edited || this.originalContent !== this.contentEditor.getValue()) && id) {
+          if (event) {
+            event.returnValue = this.$t('isGoTo', this.$store.state.locale)
+          }
+          return this.$t('isGoTo', this.$store.state.locale)
+        }
+      }
+
       if (id) {
         const responseData = await this.axios.get(`/console/articles/${id}`)
         if (responseData) {
           this.$set(this, 'title', responseData.title)
-          this.$set(this, 'content', responseData.content)
+          this.$set(this, 'originalContent', responseData.content)
           this.$set(this, 'url', responseData.path)
           this.$set(this, 'time', responseData.time.replace('T', ' ').substr(0, 19))
-          this.$set(this, 'abstract', responseData.abstract)
           this.$set(this, 'tags', responseData.tags.split(','))
           this.$set(this, 'commentable', responseData.commentable)
           this.$set(this, 'topped', responseData.topped)
+          this.abstractEditor.setValue(responseData.abstract)
+          this.contentEditor.setValue(responseData.content)
         }
       } else {
         // set storage
+        this._setDefaultLocalStorage()
         setTimeout(() => {
-          if (localStorage.getItem('article-title')) {
-            this.title = localStorage.getItem('article-title')
-            this.$set(this, 'title', localStorage.getItem('article-title'))
-          }
-          if (localStorage.getItem('article-content')) {
-            this.$set(this, 'content', localStorage.getItem('article-content'))
-          }
-          if (localStorage.getItem('article-tags')) {
-            this.$set(this, 'tags', localStorage.getItem('article-tags').split(','))
-          }
-          if (localStorage.getItem('article-url')) {
-            this.$set(this, 'url', localStorage.getItem('article-url'))
-          }
-          if (localStorage.getItem('article-time')) {
-            this.$set(this, 'time', localStorage.getItem('article-time'))
-          }
-          if (localStorage.getItem('article-abstract')) {
-            this.$set(this, 'abstract', localStorage.getItem('article-abstract'))
-          }
-          if (localStorage.getItem('article-commentable')) {
-            this.$set(this, 'commentable', localStorage.getItem('article-commentable') === 'true')
-          }
-          if (localStorage.getItem('article-useThumbs')) {
-            this.$set(this, 'useThumbs', localStorage.getItem('article-useThumbs') === 'true')
-          }
-          if (localStorage.getItem('article-topped')) {
-            this.$set(this, 'topped', localStorage.getItem('article-topped') === 'true')
-          }
-
-          this.parseMarkdown(this.content)
-        })
+          document.querySelector('.input-group__input input').focus()
+        }, 100)
       }
       // get tags
       this.$store.dispatch('getTags')
 
       this.getThumbs()
-    }
+    },
   }
 </script>
 <style lang="sass">
   .article-post__carousel
     margin: 0 auto
-    width: 720px
+    width: 768px
     position: relative
+    .carousel
+      height: 432px
     &-refresh
       position: absolute
       right: 15px
@@ -435,6 +489,6 @@
         height: 20px
         width: 20px
 
-    .pipe-content__reset img
+    .vditor-reset img
     cursor: auto
 </style>

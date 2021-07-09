@@ -1,5 +1,5 @@
 // Pipe - A small and beautiful blogging platform written in golang.
-// Copyright (C) 2017-2018, b3log.org
+// Copyright (C) 2017-present, b3log.org
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,15 +17,15 @@
 package cron
 
 import (
+	"crypto/tls"
 	"net/url"
 	"time"
 
+	"github.com/b3log/gulu"
 	"github.com/b3log/pipe/model"
 	"github.com/b3log/pipe/service"
 	"github.com/b3log/pipe/util"
 	"github.com/parnurzeal/gorequest"
-	"net/http"
-	"strings"
 )
 
 func pushArticlesPeriodically() {
@@ -39,7 +39,7 @@ func pushArticlesPeriodically() {
 }
 
 func pushArticles() {
-	defer util.Recover()
+	defer gulu.Panic.Recover(nil)
 
 	server, _ := url.Parse(model.Conf.Server)
 	if !util.IsDomain(server.Hostname()) {
@@ -48,47 +48,7 @@ func pushArticles() {
 
 	articles := service.Article.GetUnpushedArticles()
 	for _, article := range articles {
-		author := service.User.GetUser(article.AuthorID)
-		b3Key := author.B3Key
-		b3Name := author.Name
-		if "" == b3Key && !strings.Contains(model.Conf.Server, "pipe.b3log.org") {
-			pa := service.User.GetPlatformAdmin()
-			b3Key = pa.B3Key
-			b3Name = pa.Name
-		}
-		if "" == b3Key {
-			continue
-		}
-
-		blogTitleSetting := service.Setting.GetSetting(model.SettingCategoryBasic, model.SettingNameBasicBlogTitle, article.BlogID)
-		blogURLSetting := service.Setting.GetSetting(model.SettingCategoryBasic, model.SettingNameBasicBlogURL, article.BlogID)
-		requestJSON := map[string]interface{}{
-			"article": map[string]interface{}{
-				"id":        article.ID,
-				"title":     article.Title,
-				"permalink": article.Path,
-				"tags":      article.Tags,
-				"content":   article.Content,
-			},
-			"client": map[string]interface{}{
-				"name":  "Pipe",
-				"ver":   model.Version,
-				"title": blogTitleSetting.Value,
-				"host":  blogURLSetting.Value,
-				"email": b3Name,
-				"key":   b3Key,
-			},
-		}
-		result := &map[string]interface{}{}
-		_, _, errs := gorequest.New().Post("https://rhythm.b3log.org/api/article").SendMap(requestJSON).
-			Set("user-agent", model.UserAgent).Timeout(30*time.Second).
-			Retry(3, 5*time.Second, http.StatusInternalServerError).EndStruct(result)
-		if nil != errs {
-			logger.Errorf("push article to Rhythm failed: " + errs[0].Error())
-		}
-
-		article.PushedAt = article.UpdatedAt
-		service.Article.UpdatePushedAt(article)
+		service.Article.ConsolePushArticle(article)
 	}
 }
 
@@ -103,7 +63,7 @@ func pushCommentsPeriodically() {
 }
 
 func pushComments() {
-	defer util.Recover()
+	defer gulu.Panic.Recover(nil)
 
 	server, _ := url.Parse(model.Conf.Server)
 	if !util.IsDomain(server.Hostname()) {
@@ -112,47 +72,44 @@ func pushComments() {
 
 	comments := service.Comment.GetUnpushedComments()
 	for _, comment := range comments {
-		author := service.User.GetUser(comment.AuthorID)
 		article := service.Article.ConsoleGetArticle(comment.ArticleID)
 		articleAuthor := service.User.GetUser(article.AuthorID)
 		b3Key := articleAuthor.B3Key
 		b3Name := articleAuthor.Name
 		if "" == b3Key {
-			pa := service.User.GetPlatformAdmin()
-			b3Key = pa.B3Key
-			b3Name = pa.Name
-		}
-		if "" == b3Key {
 			continue
 		}
 
+		author := service.User.GetUser(comment.AuthorID)
 		blogTitleSetting := service.Setting.GetSetting(model.SettingCategoryBasic, model.SettingNameBasicBlogTitle, comment.BlogID)
 		requestJSON := map[string]interface{}{
 			"comment": map[string]interface{}{
-				"id":          comment.ID,
-				"articleId":   comment.ArticleID,
-				"content":     comment.Content,
-				"authorName":  author.Name,
-				"authorEmail": "",
+				"id":         comment.ID,
+				"articleId":  comment.ArticleID,
+				"content":    comment.Content,
+				"authorName": author.Name,
 			},
 			"client": map[string]interface{}{
-				"name":  "Pipe",
-				"ver":   model.Version,
-				"title": blogTitleSetting.Value,
-				"host":  model.Conf.Server,
-				"email": b3Name,
-				"key":   b3Key,
+				"name":      "Pipe",
+				"ver":       model.Version,
+				"title":     blogTitleSetting.Value,
+				"host":      model.Conf.Server,
+				"userName":  b3Name,
+				"userB3Key": b3Key,
 			},
 		}
 		result := &map[string]interface{}{}
-		_, _, errs := gorequest.New().Post("https://rhythm.b3log.org/api/comment").SendMap(requestJSON).
+		_, _, errs := gorequest.New().TLSClientConfig(&tls.Config{InsecureSkipVerify: true}).
+			Post("https://rhythm.b3log.org/api/comment").SendMap(requestJSON).
 			Set("user-agent", model.UserAgent).Timeout(30*time.Second).
-			Retry(3, 5*time.Second, http.StatusInternalServerError).EndStruct(result)
+			Retry(3, 5*time.Second).EndStruct(result)
 		if nil != errs {
-			logger.Errorf("push comment to Rhythm failed: " + errs[0].Error())
+			logger.Errorf("push a comment to Rhy failed: " + errs[0].Error())
+		} else {
+			logger.Infof("push a comment to Rhy result: %+v", result)
 		}
-
 		comment.PushedAt = comment.UpdatedAt
+
 		service.Comment.UpdatePushedAt(comment)
 	}
 }

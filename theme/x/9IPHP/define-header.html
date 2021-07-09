@@ -1,6 +1,6 @@
 {{define "9IPHP/header"}}
 <header class="header">
-    <div class="wrapper fn-clear">
+    <div class="wrapper fn__clear">
         <h1 class="header__logo">
             <a href="{{.BlogURL}}">
                 <span data-src="{{.LogoURL}}"></span>
@@ -10,11 +10,10 @@
         <span class="header__sub-title">
             {{.Setting.BasicBlogSubtitle}}
         </span>
-        <svg class="fn-none"><use xlink:href="#icon-toc"></use></svg>
-        <span class="fn-right">
+        <svg class="fn__none"><use xlink:href="#icon-toc"></use></svg>
+        <span class="fn__right">
             {{if eq .User.URole 0}}
-            <a href="{{.Conf.Server}}/login" class="header__btn">{{.I18n.Login}}</a> &nbsp; &nbsp;
-            <a href="{{.Conf.Server}}/register" class="header__btn ft-orange">{{.I18n.Register}}</a>
+             <a href="{{.Conf.Server}}/start" class="header__btn ft-orange">{{.I18n.StartToUse}}</a>
             {{else}}
             <a class="avatar pipe-tooltipped pipe-tooltipped--w"
                aria-label="{{.I18n.manage}}"
@@ -24,7 +23,7 @@
         </span>
     </div>
 </header>
-<nav class="fn-none mobile__nav">
+<nav class="fn__none mobile__nav">
     <a href="{{.BlogURL}}">
         <svg>
             <use xlink:href="#icon-home"></use>
@@ -79,8 +78,7 @@
         {{.I18n.Search}}
     </a>
     {{if eq .User.URole 0}}
-    <a href="{{.Conf.Server}}/login">{{.I18n.Login}}</a>
-    <a href="{{.Conf.Server}}/register">{{.I18n.Register}}</a>
+    <a href="{{.Conf.Server}}/start">{{.I18n.StartToUse}}</a>
     {{else}}
     <a href="{{.Conf.Server}}/{{if ne .User.URole 4}}admin/{{end}}">
         <svg>
@@ -91,7 +89,7 @@
     {{end}}
 </nav>
 <nav class="nav">
-    <div class="wrapper fn-clear">
+    <div class="wrapper fn__clear">
         <a href="{{.BlogURL}}">
             <svg>
                 <use xlink:href="#icon-home"></use>

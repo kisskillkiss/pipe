@@ -6,6 +6,8 @@
     {{template "head/3rdstatistic" .}}
 </head>
 <body>
+<div id="pjax">
+    {{if .pjax}}{{noescape "<!---- pjax {#pjax} start ---->"}}{{end}}
 {{template "Medium/header" .}}
 {{template "Medium/nav" .}}
 <div class="main">
@@ -17,8 +19,8 @@
     <div class="wrapper content">
         <h2 class="module__title module__title--unmargin">
             <span>
-                <span id="archiveMonthCount">0</span> <span class="ft-fade ft-13">{{.I18n.Month2}}</span>
-                <span id="archiveArticleCount">0</span> <span class="ft-fade ft-13">{{.I18n.Article2}}</span>
+                <span id="archiveMonthCount">0</span> <span class="ft__fade ft__13">{{.I18n.Month2}}</span>
+                <span id="archiveArticleCount">0</span> <span class="ft__fade ft__13">{{.I18n.Article2}}</span>
             </span>
         </h2>
         {{range .Archives}}
@@ -26,7 +28,7 @@
             <h3>
                 <a href="{{.URL}}">
                     {{.Title}}
-                    <span class="ft-fade">{{.ArticleCount}} {{$.I18n.Space}}</span>
+                    <span class="ft__fade">{{.ArticleCount}} {{$.I18n.Space}}</span>
                 </a>
             </h3>
         </div>
@@ -39,6 +41,8 @@
   increase({{len .Archives}}, 1000, 'archiveMonthCount', 0)
   increase({{.Statistic.StatisticArticleCount}}, 1000, 'archiveArticleCount', 0)
 </script>
+{{if .pjax}}{{noescape "<!---- pjax {#pjax} end ---->"}}{{end}}
+</div>
 </body>
 </html>
 {{end}}

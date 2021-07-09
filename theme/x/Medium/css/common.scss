@@ -1,16 +1,12 @@
 /**
- * skin Medium style
+ * skin style
  *
  * @author <a href="http://vanessa.b3log.org">Liyuan Li</a>
- * @version 0.1.1.0, Jan 30, 2018
+ * @version 0.2.0.1, Sep 9, 2018
 */
-@import '../../../scss/basic';
-@import '../../../scss/github';
 
-// variable
-$text-color: rgba(0, 0, 0, .84);
-$transition: all .1s;
-$green: #03a87c;
+@import 'variables';
+@import '../../../scss/basic';
 
 // reset
 html {
@@ -23,12 +19,6 @@ body {
   color: $text-color;
   background-color: #fff;
   text-rendering: geometricPrecision;
-}
-
-.pipe-content__reset {
-  pre > code {
-    background-image: url(../../../images/code-bg.png);
-  }
 }
 
 .ft-green {
@@ -133,7 +123,7 @@ body {
   }
 
   &--fixed {
-    z-index: 10;
+    z-index: 11;
     position: fixed;
     width: 100%;
     top: -64px;
@@ -536,7 +526,7 @@ body {
     vertical-align: sub;
   }
 
-  .fn-right {
+  .fn__right {
     position: absolute;
     top: 0;
     right: 20px;
@@ -575,7 +565,7 @@ body {
     padding: 10px 20px;
     margin: 0 0 20px 0;
   }
-  &__body > .fn-clear > .ft-gray:first-child {
+  &__body > .fn__clear > .ft__gray:first-child {
     color: $green;
     font-size: 16px;
     transition: $transition;
@@ -936,7 +926,7 @@ body {
 
   .footer {
     margin-top: 20px;
-    .fn-right {
+    .fn__right {
       float: none;
     }
 

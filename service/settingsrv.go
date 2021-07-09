@@ -1,5 +1,5 @@
 // Pipe - A small and beautiful blogging platform written in golang.
-// Copyright (C) 2017-2018, b3log.org
+// Copyright (C) 2017-present, b3log.org
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -80,6 +80,23 @@ func (srv *settingService) GetSettings(category string, names []string, blogID u
 	}
 
 	return ret
+}
+
+func (srv *settingService) AddSetting(setting *model.Setting) error {
+	srv.mutex.Lock()
+	defer srv.mutex.Unlock()
+
+	if nil != srv.GetSetting(setting.Category, setting.Name, setting.BlogID) {
+		return nil
+	}
+
+	tx := db.Begin()
+	if err := tx.Create(setting).Error; nil != err {
+		return err
+	}
+	tx.Commit()
+
+	return nil
 }
 
 func (srv *settingService) UpdateSettings(category string, settings []*model.Setting, blogID uint64) error {

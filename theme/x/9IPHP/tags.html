@@ -7,10 +7,12 @@
 </head>
 <body>
 {{template "9IPHP/header" .}}
-<div class="main wrapper fn-clear">
+<div id="pjax" class="fn__flex-1">
+{{if .pjax}}{{noescape "<!---- pjax {#pjax} start ---->"}}{{end}}
+<div class="main wrapper fn__clear">
     <div class="content page">
         <h1 class="page__title">
-            <span id="tagArticleCount">0</span> <span class="ft-fade ft-13">{{.I18n.Tags2}}</span>
+            <span id="tagArticleCount">0</span> <span class="ft__fade ft__13">{{.I18n.Tags2}}</span>
         </h1>
         <div class="tags" id="tags">
             {{range .Tags}}
@@ -20,11 +22,17 @@
     </div>
     {{template "9IPHP/side" .}}
 </div>
+{{if .pjax}}{{noescape "<!---- pjax {#pjax} end ---->"}}{{end}}
+</div>
+
 {{template "9IPHP/footer" .}}
+
+{{if .pjax}}{{noescape "<!---- pjax {#pjax} start ---->"}}{{end}}
 <script>
   increase({{len .Tags}}, 1000, 'tagArticleCount', 0)
   addLevelToTag()
 </script>
+{{if .pjax}}{{noescape "<!---- pjax {#pjax} end ---->"}}{{end}}
 </body>
 </html>
 {{end}}

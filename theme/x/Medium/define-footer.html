@@ -1,14 +1,14 @@
 {{define "Medium/footer"}}
 <div class="wrapper">
     <footer class="footer">
-        <div class="fn-clear">
+        <div class="fn__clear">
             {{.Setting.BasicBlogSubtitle}}
-            <div class="fn-right">
+            <div class="fn__right">
                 <a href="{{.BlogURL}}">{{.Setting.BasicBlogTitle}}</a> &copy; {{.Year}}
                 {{.Setting.BasicFooter}}
             </div>
         </div>
-        <div class="fn-clear">
+        <div class="fn__clear">
             {{.Statistic.StatisticViewCount}}
             {{.I18n.View}}
             &nbsp;
@@ -17,16 +17,18 @@
             &nbsp;
             {{.Statistic.StatisticCommentCount}}
             {{.I18n.Comment}}
-            <div class="fn-right">
+            <div class="fn__right">
                 Powered by <a href="https://b3log.org/" target="_blank">B3log 开源</a> •
-                <a href="https://hacpai.com/tag/Pipe" target="_blank">Pipe</a> •
+                <a href="https://hacpai.com/tag/pipe" target="_blank">Pipe</a> •
                 Theme <a href="https://github.com/b3log/pipe-themes" target="_blank">Medium</a>
+                by <a href="http://vanessa.b3log.org" target="_blank">Vanessa</a>
             </div>
         </div>
     </footer>
 </div>
 <script type="text/javascript"
         id="script"
+        data-blogurl="{{.BlogURL}}"
         data-isLogin="{{if eq .User.URole 0}}false{{else}}true{{end}}"
         src="{{.Conf.StaticServer}}/theme/x/{{.Setting.ThemeName}}/js/common.min.js?{{.Conf.StaticResourceVersion}}"
 ></script>

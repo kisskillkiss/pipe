@@ -1,5 +1,5 @@
 // Pipe - A small and beautiful blogging platform written in golang.
-// Copyright (C) 2017-2018, b3log.org
+// Copyright (C) 2017-present, b3log.org
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -37,6 +37,7 @@ type ConsoleArticle struct {
 
 // ConsoleTag represents console tag.
 type ConsoleTag struct {
+	ID    uint64 `json:"id"`
 	Title string `json:"title"`
 	URL   string `json:"url,omitempty"`
 }

@@ -1,5 +1,5 @@
 // Pipe - A small and beautiful blogging platform written in golang.
-// Copyright (C) 2017-2018, b3log.org
+// Copyright (C) 2017-present, b3log.org
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,18 +17,24 @@
 package util
 
 import (
-	"net/http"
-	"time"
 	"io/ioutil"
 	"math/rand"
+	"net/http"
+	"os"
+	"time"
+
+	"github.com/b3log/gulu"
 )
+
+// Logger
+var logger = gulu.Log.NewLogger(os.Stdout)
 
 // RandAvatarData returns random avatar image byte array data from Gravatar (http://www.gravatar.com).
 // Sees https://github.com/b3log/pipe/issues/131 for more details.
 func RandAvatarData() (ret []byte) {
 	modes := []string{"identicon", "monsterid", "wavatar", "retro", "robohash"}
 	d := modes[rand.Intn(len(modes))]
-	h := RandString(16)
+	h := gulu.Rand.String(16)
 
 	http.DefaultClient.Timeout = 2 * time.Second
 	response, err := http.Get("http://www.gravatar.com/avatar/" + h + "?s=256&d=" + d)

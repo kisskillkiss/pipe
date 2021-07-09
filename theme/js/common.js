@@ -2,83 +2,29 @@
  * @fileoverview common tool for every theme
  *
  * @author <a href="http://vanessa.b3log.org">Liyuan Li</a>
- * @version 0.3.1.0, Jul 8, 2018
+ * @version 0.8.0.0, Nov 19, 2019
  */
 
 import $ from 'jquery'
-import config from '../../pipe.json'
+import NProgress from 'nprogress'
+import pjax from './lib/pjax'
 
+export const ParseHljs = () => {
+  Vditor.highlightRender({
+    style: 'github',
+    enable: false,
+  }, document)
+}
 /**
  * @description 初始化 markdown 解析
  */
 export const ParseMarkdown = () => {
-  let hasMathJax = false;
-  let hasFlow = false;
-  // 按需加载 MathJax
-  $('.pipe-content__reset').each(function () {
-    if ($(this).text().split('$').length > 2 ||
-      ($(this).text().split('\\(').length > 1 &&
-        $(this).text().split('\\)').length > 1)) {
-      hasMathJax = true;
-    }
-
-    if ($(this).find('code.language-flow').length > 0) {
-      hasFlow = true
-    }
-  });
-
-  if (hasMathJax) {
-    if (typeof MathJax !== 'undefined') {
-      MathJax.Hub.Typeset();
-    } else {
-      $.ajax({
-        method: 'GET',
-        url: 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/MathJax.js?config=TeX-MML-AM_CHTML',
-        dataType: 'script',
-        cache: true
-      }).done(function () {
-        MathJax.Hub.Config({
-          tex2jax: {
-            inlineMath: [['$', '$'], ['\\(', '\\)']],
-            displayMath: [['$$', '$$']],
-            processEscapes: true,
-            processEnvironments: true,
-            skipTags: ['pre', 'code', 'script']
-          }
-        });
-      });
-    }
-  }
-
-  if (hasFlow) {
-    const initFlow = function () {
-      $('.pipe-content__reset code.language-flow').each(function (index) {
-        const $it = $(this);
-        const id = 'pipeFlowChart' + (new Date()).getTime() + index;
-        $it.hide();
-        $it.parent().after('<div class="ft-center" id="' + id + '"></div>')
-
-        const diagram = flowchart.parse($.trim($it.text()));
-        diagram.drawSVG(id);
-
-        $it.parent().remove();
-        $('#' + id).find('svg').height('auto').width('auto');
-      });
-    };
-
-    if (typeof flowchart !== 'undefined') {
-      initFlow();
-    } else {
-      $.ajax({
-        method: 'GET',
-        url: (config.StaticServer || config.Server) + '/theme/js/lib/flowchart.min.js',
-        dataType: 'script',
-        cache: true
-      }).done(function () {
-        initFlow()
-      });
-    }
-  }
+  Vditor.codeRender(document.body, $('#pipeLang').data('lang'))
+  Vditor.mathRender(document.body)
+  Vditor.abcRender()
+  Vditor.chartRender()
+  Vditor.mediaRender(document)
+  Vditor.mermaidRender(document.body)
 }
 
 /**
@@ -86,35 +32,39 @@ export const ParseMarkdown = () => {
  */
 export const PreviewImg = () => {
   const _previewImg = (it) => {
-    const $it = $(it);
+    const $it = $(it)
     var top = it.offsetTop,
-      left = it.offsetLeft;
+      left = it.offsetLeft
 
-    $('body').append('<div class="pipe-preview__img" onclick="this.remove()"><img style="transform: translate3d(' +
-      Math.max(0, left) + 'px, ' + Math.max(0, (top - $(window).scrollTop())) + 'px, 0)" src="' +
-      ($it.attr('src').split('?imageView2')[0]) + '"></div>');
+    $('body').
+      append('<div class="pipe-preview__img" onclick="this.remove()"><img style="transform: translate3d(' +
+        Math.max(0, left) + 'px, ' +
+        Math.max(0, (top - $(window).scrollTop())) + 'px, 0)" src="' +
+        ($it.attr('src').split('?imageView2')[0]) + '"></div>')
 
     $('.pipe-preview__img').css({
       'background-color': '#fff',
-      'position': 'fixed'
-    });
+      'position': 'fixed',
+    })
 
     $('.pipe-preview__img img')[0].onload = function () {
-      const $previewImage = $('.pipe-preview__img');
+      const $previewImage = $('.pipe-preview__img')
       $previewImage.find('img').css('transform', 'translate3d(' +
-        (Math.max(0, $(window).width() - $previewImage.find('img').width()) / 2) + 'px, ' +
-        (Math.max(0, $(window).height() - $previewImage.find('img').height()) / 2) + 'px, 0)');
+        (Math.max(0, $(window).width() - $previewImage.find('img').width()) /
+          2) + 'px, ' +
+        (Math.max(0, $(window).height() - $previewImage.find('img').height()) /
+          2) + 'px, 0)')
 
       // fixed chrome render transform bug
       setTimeout(function () {
-        $previewImage.width($(window).width());
-      }, 300);
+        $previewImage.width($(window).width())
+      }, 300)
     }
   }
   // init
-  $('body').on('click', '.pipe-content__reset img', function () {
+  $('body').on('click', '.vditor-reset img', function () {
     _previewImg(this)
-  });
+  })
 }
 
 /**
@@ -150,7 +100,9 @@ export const LazyLoadImage = () => {
   } else {
     window.imageIntersectionObserver = new IntersectionObserver((entries) => {
       entries.forEach((entrie) => {
-        if ((typeof entrie.isIntersecting === 'undefined' ? entrie.intersectionRatio !== 0 : entrie.isIntersecting)
+        if ((typeof entrie.isIntersecting === 'undefined'
+          ? entrie.intersectionRatio !== 0
+          : entrie.isIntersecting)
           && entrie.target.getAttribute('data-src')) {
           loadImg(entrie.target)
         }
@@ -197,14 +149,18 @@ export const LazyLoadCSSImage = () => {
       window.CSSImageIntersectionObserver.observe(this)
     })
   } else {
-    window.CSSImageIntersectionObserver = new IntersectionObserver((entries) => {
-      entries.forEach((entrie) => {
-        if ((typeof entrie.isIntersecting === 'undefined' ? entrie.intersectionRatio !== 0 : entrie.isIntersecting)
-          && entrie.target.getAttribute('data-src') && entrie.target.tagName.toLocaleLowerCase() !== 'img') {
-          loadCSSImage(entrie.target)
-        }
+    window.CSSImageIntersectionObserver = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entrie) => {
+          if ((typeof entrie.isIntersecting === 'undefined'
+            ? entrie.intersectionRatio !== 0
+            : entrie.isIntersecting)
+            && entrie.target.getAttribute('data-src') &&
+            entrie.target.tagName.toLocaleLowerCase() !== 'img') {
+            loadCSSImage(entrie.target)
+          }
+        })
       })
-    })
     $cssImage.each(function () {
       if (this.tagName.toLowerCase() === 'img') {
         return
@@ -239,11 +195,8 @@ export const KillBrowser = () => {
  */
 export const Logout = () => {
   $.ajax({
-    url: `${config.Server}/api/logout`,
+    url: `${$('#pipeLang').data('server')}/api/logout`,
     type: 'POST',
-    success: (result) => {
-      window.location.href = 'https://hacpai.com/logout'
-    }
   })
 }
 
@@ -255,7 +208,9 @@ const TrimB3Id = () => {
   if (search.indexOf('b3id') === -1) {
     return
   }
-  history.replaceState('', '', window.location.href.replace(/(&b3id=\w{8})|(b3id=\w{8}&)|(\?b3id=\w{8})/, ''))
+  history.replaceState('', '',
+    window.location.href.replace(/(&b3id=\w{8})|(b3id=\w{8}&)|(\?b3id=\w{8})/,
+      ''))
 }
 
 /**
@@ -273,7 +228,7 @@ const addCopyright = () => {
     ]
   }
 
-  $('body').on('copy', '.pipe-content__reset', function (event) {
+  $('body').on('copy', '.vditor-reset', function (event) {
     if (!window.getSelection) {
       return
     }
@@ -287,15 +242,18 @@ const addCopyright = () => {
     }
 
     if (selectionObj.rangeCount) {
-      var container = document.createElement("div");
+      var container = document.createElement('div')
       for (var i = 0, len = selectionObj.rangeCount; i < len; ++i) {
-        container.appendChild(selectionObj.getRangeAt(i).cloneContents());
+        container.appendChild(selectionObj.getRangeAt(i).cloneContents())
       }
     }
 
     if ('object' === typeof event.originalEvent.clipboardData) {
-      event.originalEvent.clipboardData.setData('text/html', container.innerHTML + genCopy(author, link).join('<br>'))
-      event.originalEvent.clipboardData.setData('text/plain', selectionObj.toString() + genCopy(author, link).join('\n'))
+      event.originalEvent.clipboardData.setData(
+        'text/html', container.innerHTML + genCopy(author, link).join('<br>'))
+      event.originalEvent.clipboardData.setData(
+        'text/plain', selectionObj.toString() +
+        genCopy(author, link).join('\n'))
       container.remove()
       event.preventDefault()
       return
@@ -304,24 +262,70 @@ const addCopyright = () => {
     $('body').append(`<div id="pipeFixCopy" style="position: fixed; left: -9999px;">
 ${selectionObj.toString()}${genCopy(author, link).join('<br>')}</div>`)
     window.getSelection().selectAllChildren($('#pipeFixCopy')[0])
-    setTimeout(function() {
+    setTimeout(function () {
       $('#pipeFixCopy').remove()
     }, 200)
   })
 }
 
+/**
+ * @description 初始化 pjax
+ * @param {function} cb pjax 成功加载后的回调函数
+ */
+export const initPjax = (cb) => {
+  if ($('#pjax').length === 1) {
+    pjax({
+      selector: 'a',
+      container: '#pjax',
+      show: '',
+      cache: false,
+      storage: true,
+      titleSuffix: '',
+      filter: function (href) {
+        if (href.indexOf('/atom') > -1 ||
+          href.indexOf($('#pipeLang').data('server') + '/admin') > -1) {
+          return true
+        } else if (href.indexOf($('#script').data('blogurl')) > -1) {
+          return false
+        }
+        return true
+      },
+      callback: function () {
+        LazyLoadCSSImage()
+        LazyLoadImage()
+        ParseMarkdown()
+        ParseHljs()
+        cb && cb()
+      },
+    })
+    NProgress.configure({showSpinner: false})
+    $('#pjax').bind('pjax.start', function () {
+      NProgress.start()
+    })
+    $('#pjax').bind('pjax.end', function () {
+      window.scroll(window.scrollX, 0)
+      NProgress.done()
+    })
+  }
+}
+
 (() => {
+  $.ajax({
+    method: 'GET',
+    url: 'https://cdn.jsdelivr.net/npm/vditor@1.10.0/dist/index.min.js',
+    dataType: 'script',
+    cache: true,
+    success: () => {
+      ParseMarkdown()
+      ParseHljs()
+    },
+  })
   TrimB3Id()
   LazyLoadCSSImage()
   LazyLoadImage()
-  ParseMarkdown()
   addCopyright()
 
-  if ('serviceWorker' in navigator && 'caches' in window && 'fetch' in window && config.RuntimeMode === 'prod') {
-    // navigator.serviceWorker.register(`${config.Server}/sw.min.js?${config.StaticResourceVersion}`, {scope: '/'})
-  }
-
-  if (navigator.userAgent.match(/\(i[^;]+;( U;)? CPU.+Mac OS X/)) {
-    return
-  }
+  // if ('serviceWorker' in navigator && 'caches' in window && 'fetch' in window && config.RuntimeMode === 'prod') {
+  // navigator.serviceWorker.register(`${config.Server}/sw.min.js?${config.StaticResourceVersion}`, {scope: '/'})
+  // }
 })()

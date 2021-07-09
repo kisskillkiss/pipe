@@ -1,5 +1,5 @@
 // Pipe - A small and beautiful blogging platform written in golang.
-// Copyright (C) 2017-2018, b3log.org
+// Copyright (C) 2017-present, b3log.org
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -59,5 +59,13 @@ func TestIsDomain(t *testing.T) {
 
 	if IsDomain("8.8.8.8") {
 		t.Errorf("[8.8.8.8] is not a domain")
+	}
+}
+
+func TestIsBot(t *testing.T) {
+	if !IsBot("Sym") {
+		t.Errorf("[Sym] is not a bot")
+
+		return
 	}
 }

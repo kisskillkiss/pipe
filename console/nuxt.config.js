@@ -14,7 +14,7 @@ module.exports = {
     ],
     link: [
       { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' },
-      { rel: 'manifest', href: `${env.Server}/theme/js/manifest.json` }
+      { rel: 'manifest', href: `/manifest.json` }
     ]
   },
   /*
@@ -35,7 +35,6 @@ module.exports = {
   ** Build configuration
   */
   build: {
-    vendor: ['babel-polyfill', 'vue-i18n', '~/assets/symbol.js', 'axios', 'vuetify'],
     publicPath: (env.StaticServer ||  env.Server) + '/console/dist/',
     extractCSS: true,
     ssr: false,
@@ -53,9 +52,9 @@ module.exports = {
       }
     }
   },
-  router: {
-    middleware: ['initialized', 'authenticated']
-  },
+  // router: {
+  //   middleware: ['authenticated']
+  // },
   modules: ['@nuxtjs/proxy'],
   proxy: {
     '/api': {

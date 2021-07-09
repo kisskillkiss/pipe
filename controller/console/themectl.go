@@ -1,5 +1,5 @@
 // Pipe - A small and beautiful blogging platform written in golang.
-// Copyright (C) 2017-2018, b3log.org
+// Copyright (C) 2017-present, b3log.org
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -19,6 +19,7 @@ package console
 import (
 	"net/http"
 
+	"github.com/b3log/gulu"
 	"github.com/b3log/pipe/model"
 	"github.com/b3log/pipe/service"
 	"github.com/b3log/pipe/theme"
@@ -28,7 +29,7 @@ import (
 
 // UpdateThemeAction updates theme.
 func UpdateThemeAction(c *gin.Context) {
-	result := util.NewResult()
+	result := gulu.Ret.NewResult()
 	defer c.JSON(http.StatusOK, result)
 
 	theme := c.Param("id")
@@ -43,14 +44,14 @@ func UpdateThemeAction(c *gin.Context) {
 		},
 	}
 	if err := service.Setting.UpdateSettings(model.SettingCategoryTheme, settings, session.BID); nil != err {
-		result.Code = -1
+		result.Code = util.CodeErr
 		result.Msg = err.Error()
 	}
 }
 
 // GetThemesAction gets themes.
 func GetThemesAction(c *gin.Context) {
-	result := util.NewResult()
+	result := gulu.Ret.NewResult()
 	defer c.JSON(http.StatusOK, result)
 
 	session := util.GetSession(c)

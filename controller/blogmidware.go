@@ -1,5 +1,5 @@
 // Pipe - A small and beautiful blogging platform written in golang.
-// Copyright (C) 2017-2018, b3log.org
+// Copyright (C) 2017-present, b3log.org
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,7 +20,6 @@ import (
 	"html/template"
 	"math"
 	"net/http"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -32,6 +31,26 @@ import (
 	"github.com/dustin/go-humanize"
 	"github.com/gin-gonic/gin"
 )
+
+// DataModel represents data model.
+type DataModel map[string]interface{}
+
+func fillUser(c *gin.Context) {
+	inited := service.Init.Inited()
+	if !inited && util.PathInit != c.Request.URL.Path {
+		c.Redirect(http.StatusSeeOther, model.Conf.Server+util.PathInit)
+		c.Abort()
+
+		return
+	}
+
+	dataModel := &DataModel{}
+	c.Set("dataModel", dataModel)
+	session := util.GetSession(c)
+	(*dataModel)["User"] = session
+
+	c.Next()
+}
 
 func resolveBlog(c *gin.Context) {
 	username := c.Param("username")
@@ -141,7 +160,7 @@ func fillCommon(c *gin.Context) {
 	(*dataModel)["Year"] = time.Now().Year()
 	users, _ := service.User.GetBlogUsers(1, blogID)
 	(*dataModel)["UserCount"] = len(users)
-
+	(*dataModel)["BlogAdmin"] = service.User.GetBlogAdmin(blogID)
 	(*dataModel)["Navigations"] = service.Navigation.GetNavigations(blogID)
 
 	fillMostUseCategories(&settingMap, dataModel, blogID)
@@ -243,8 +262,13 @@ func fillRecentComments(c *gin.Context, settingMap *map[string]interface{}, data
 
 		page := service.Comment.GetCommentPage(comment.ArticleID, comment.ID, blogID)
 		article := service.Article.ConsoleGetArticle(comment.ArticleID)
+
+		title := util.Markdown(comment.Content).AbstractText
+		if "" == title {
+			continue
+		}
 		themeComment := &model.ThemeComment{
-			Title:     util.Markdown(comment.Content).AbstractText,
+			Title:     title,
 			URL:       getBlogURL(c) + article.Path + "?p=" + strconv.Itoa(page) + "#pipeComment" + strconv.Itoa(int(comment.ID)),
 			CreatedAt: humanize.Time(comment.CreatedAt),
 			Author:    author,
@@ -319,7 +343,7 @@ func getLocale(c *gin.Context) string {
 }
 
 func notFound(c *gin.Context) {
-	t, err := template.ParseFiles(filepath.ToSlash(filepath.Join(model.Conf.StaticRoot, "console/dist/init/index.html")))
+	t, err := template.ParseFiles("console/dist/start/index.html")
 	if nil != err {
 		logger.Errorf("load 404 page failed: " + err.Error())
 		c.String(http.StatusNotFound, "load 404 page failed")

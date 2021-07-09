@@ -15,7 +15,7 @@ export const LazyLoadImage = () => {
   }
 
   if (!('IntersectionObserver' in window)) {
-    document.querySelectorAll('.pipe-content__reset img').forEach((data) => {
+    document.querySelectorAll('.vditor-reset img').forEach((data) => {
       if (data.getAttribute('data-src')) {
         loadImg(data)
       }
@@ -25,7 +25,7 @@ export const LazyLoadImage = () => {
 
   if (window.imageIntersectionObserver) {
     window.imageIntersectionObserver.disconnect()
-    document.querySelectorAll('.pipe-content__reset img').forEach(function (data) {
+    document.querySelectorAll('.vditor-reset img').forEach(function (data) {
       window.imageIntersectionObserver.observe(data)
     })
   } else {
@@ -36,7 +36,7 @@ export const LazyLoadImage = () => {
         }
       })
     })
-    document.querySelectorAll('.pipe-content__reset img').forEach(function (data) {
+    document.querySelectorAll('.vditor-reset img').forEach(function (data) {
       window.imageIntersectionObserver.observe(data)
     })
   }
@@ -81,7 +81,13 @@ export const genMenuData = (app, locale) => [
         title: app.$t('navigationList', locale),
         link: '/admin/navigations',
         role: 2
-      }/*,
+      },
+      {
+        title: app.$t('tagList', locale),
+        link: '/admin/tags',
+        role: 2
+      }
+      /*,
       {
         title: app.$t('userList', locale),
         link: '/admin/users',
@@ -139,6 +145,11 @@ export const genMenuData = (app, locale) => [
       {
         title: app.$t('3rdStatistic', locale),
         link: '/admin/settings/3rd-statistic',
+        role: 2
+      },
+      {
+        title: app.$t('ad', locale),
+        link: '/admin/settings/ad',
         role: 2
       }
     ]
@@ -263,11 +274,4 @@ export const initParticlesJS = (id) => {
     },
     retina_detect: true
   })
-}
-
-export const asyncLoadScript = (url, loadCB) => {
-  const scriptDom = document.createElement('script')
-  scriptDom.setAttribute('src', url)
-  document.head.appendChild(scriptDom)
-  scriptDom.onload = loadCB
 }

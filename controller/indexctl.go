@@ -1,5 +1,5 @@
 // Pipe - A small and beautiful blogging platform written in golang.
-// Copyright (C) 2017-2018, b3log.org
+// Copyright (C) 2017-present, b3log.org
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,18 +17,20 @@
 package controller
 
 import (
+	"io/ioutil"
 	"net/http"
 	"path/filepath"
+	"strings"
 	"text/template"
 
+	"github.com/b3log/gulu"
+	"github.com/b3log/pipe/model"
 	"github.com/b3log/pipe/service"
-	"github.com/b3log/pipe/util"
 	"github.com/gin-gonic/gin"
-	model "github.com/b3log/pipe/model"
 )
 
 func showIndexAction(c *gin.Context) {
-	t, err := template.ParseFiles(filepath.ToSlash(filepath.Join(model.Conf.StaticRoot, "console/dist/index.html")))
+	t, err := template.ParseFiles("console/dist/index.html")
 	if nil != err {
 		logger.Errorf("load index page failed: " + err.Error())
 		c.String(http.StatusNotFound, "load index page failed")
@@ -39,8 +41,20 @@ func showIndexAction(c *gin.Context) {
 	t.Execute(c.Writer, nil)
 }
 
-func showPlatInfo(c *gin.Context) {
-	result := util.NewResult()
+func showStartPageAction(c *gin.Context) {
+	t, err := template.ParseFiles("console/dist/start/index.html")
+	if nil != err {
+		logger.Errorf("load start page failed: " + err.Error())
+		c.String(http.StatusNotFound, "load start page failed")
+
+		return
+	}
+
+	t.Execute(c.Writer, nil)
+}
+
+func showPlatInfoAction(c *gin.Context) {
+	result := gulu.Ret.NewResult()
 	defer c.JSON(http.StatusOK, result)
 
 	data := map[string]interface{}{}
@@ -54,8 +68,8 @@ func showPlatInfo(c *gin.Context) {
 	result.Data = data
 }
 
-func showTopBlogs(c *gin.Context) {
-	result := util.NewResult()
+func showTopBlogsAction(c *gin.Context) {
+	result := gulu.Ret.NewResult()
 	defer c.JSON(http.StatusOK, result)
 
 	blogs := service.User.GetTopBlogs(10)
@@ -66,4 +80,19 @@ func showTopBlogs(c *gin.Context) {
 	}
 
 	result.Data = blogs
+}
+
+func showManifestAction(c *gin.Context) {
+	data, err := ioutil.ReadFile(filepath.FromSlash("theme/js/manifest.json"))
+	if nil != err {
+		notFound(c)
+
+		return
+	}
+
+	manifest := string(data)
+	manifest = strings.ReplaceAll(manifest, "{server}", model.Conf.Server)
+
+	c.Writer.Header().Set("Content-Type", "application/json; charset=utf-8")
+	c.Writer.Write([]byte(manifest))
 }

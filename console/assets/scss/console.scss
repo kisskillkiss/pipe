@@ -23,29 +23,22 @@
   left: 0;
 }
 
-// login
 .login {
-  padding: 30px;
   &__content {
-    height: 300px;
+    overflow: hidden;
+    text-align: center;
   }
 
-  &__link {
-    margin: 0 25px;
-  }
-
-  &__image {
-    &.card {
-      display: block;
-      height: 120px;
-      width: 120px;
-      margin: 54px auto;
-      svg {
-        color: #fff;
-        height: 100px;
-        width: 100px;
-        padding: 10px;
-      }
+  &__github {
+    cursor: pointer;
+    background-image: url("~assets/images/github.png");
+    height: 200px;
+    width: 200px;
+    background-size: cover;
+    margin: 20px auto;
+    background-position: center center;
+    &:hover {
+      background-image: url("~assets/images/github.gif");
     }
   }
 }

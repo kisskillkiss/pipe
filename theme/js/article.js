@@ -2,20 +2,24 @@
  * @fileoverview article tool for every theme
  *
  * @author <a href="http://vanessa.b3log.org">Liyuan Li</a>
- * @version 0.2.0.0, Oct 19, 2017
+ * @version 0.5.0.2, Sep 18, 2019
  */
 
 import $ from 'jquery'
-import {Editor} from "./lib/b3log/editor/index";
-import {LazyLoadCSSImage, LazyLoadImage, ParseMarkdown} from './common'
-import config from '../../pipe.json'
+import {
+  LazyLoadCSSImage,
+  LazyLoadImage,
+  ParseMarkdown,
+  ParseHljs,
+} from './common'
 
 /**
  * @description 初始化目录
  * @param {string} tocId 目录 id
  * @param {string} articleId 目录对应正文 id
  */
-export const InitToc = (tocId, articleId, articleOffset = 0, activeClass = 'toc__item--active') => {
+export const InitToc = (
+  tocId, articleId, articleOffset = 0, activeClass = 'toc__item--active') => {
   const $toc = $(`#${tocId}`)
   const $articleTocs = $(`#${articleId} [id^=toc]`)
   let tocPositionArray = []
@@ -35,7 +39,7 @@ export const InitToc = (tocId, articleId, articleOffset = 0, activeClass = 'toc_
     $articleTocs.each(function () {
       tocPositionArray.push({
         id: this.id,
-        offsetTop: this.offsetTop
+        offsetTop: this.offsetTop,
       })
     })
 
@@ -45,57 +49,20 @@ export const InitToc = (tocId, articleId, articleOffset = 0, activeClass = 'toc_
       if (scrollTop < tocPositionArray[i].offsetTop - articleOffset) {
         $toc.find('li').removeClass(activeClass)
         const index = i > 0 ? i - 1 : 0
-        $toc.find(`a[href="#${$articleTocs[index].id}"]`).parent().addClass(activeClass)
+        $toc.find(`a[href="#${$articleTocs[index].id}"]`).
+          parent().
+          addClass(activeClass)
         break
       }
     }
-    if (scrollTop >= $articleTocs[$articleTocs.length - 1].offsetTop - articleOffset) {
+    if (scrollTop >= $articleTocs[$articleTocs.length - 1].offsetTop -
+      articleOffset) {
       $toc.find('li').removeClass(activeClass)
       $toc.find('li:last').addClass(activeClass)
     }
   })
 
   $(window).scroll()
-}
-
-export const InitHljs = () => {
-  const $codes = $('pre code')
-  if ($codes.length === 0) {
-    return false;
-  }
-
-  var parseHljs = function () {
-    $codes.each(function (i, block) {
-      var $it = $(this);
-      if ($it.hasClass('language-flow')) {
-        return;
-      }
-
-      if ($it.parent().find('.pipe-code__copy').length > 0) {
-        return;
-      }
-
-      $it.css({'max-height': $(window).height() - 40}).parent().prepend(`<textarea>${$it.text()}</textarea><div 
-          aria-label="copy" onmouseover="this.setAttribute('aria-label', 'Copy')" 
-          class="pipe-code__copy pipe-tooltipped pipe-tooltipped--w" 
-          onclick="this.previousElementSibling.select();document.execCommand('copy');this.setAttribute('aria-label','Copied')"><svg><use xlink:href="#copy"></use></svg></div>`);
-
-      hljs.highlightBlock(block);
-    });
-  }
-
-  if (typeof hljs === 'undefined') {
-    $.ajax({
-      method: "GET",
-      url: (config.StaticServer || config.Server) + "/theme/js/lib/highlight.min.js",
-      dataType: 'script',
-      cache: true
-    }).done(function () {
-      parseHljs();
-    });
-  } else {
-    parseHljs();
-  }
 }
 
 /**
@@ -108,7 +75,7 @@ export const InitHljs = () => {
 export const ShowEditor = (reply, id, commentId) => {
   const $editor = $('#pipeEditor')
   if ($editor.length === 0) {
-    location.href = 'https://hacpai.com/login'
+    location.href = `${$('#pipeLang').data('server')}/start`
     return
   }
   if (commentId) {
@@ -117,11 +84,101 @@ export const ShowEditor = (reply, id, commentId) => {
     $editor.removeData('commentid')
   }
 
-  $editor.css({'bottom': '0', 'opacity': 1}).data('id', id)
-  $('body').css('padding-bottom', $editor.outerHeight() + 'px')
+  if ($(window).width() < 768) {
+    $editor.css({'bottom': 'auto', top: 0, 'opacity': 1}).data('id', id)
+  } else {
+    $editor.css({'bottom': '0', top: 'auto', 'opacity': 1}).data('id', id)
+  }
+
   $('#pipeEditorReplyTarget').text(reply)
-  $('#pipeEditorComment textarea').focus()
-};
+
+  if ($('#pipeEditorComment').hasClass('vditor')) {
+    vditor.focus()
+    return
+  }
+
+  let toolbar = [
+    'emoji',
+    'headings',
+    'bold',
+    'italic',
+    'strike',
+    '|',
+    'line',
+    'quote',
+    '|',
+    'list',
+    'ordered-list',
+    'check',
+    '|',
+    'code',
+    'inline-code',
+    '|',
+    'undo',
+    'redo',
+    '|',
+    'link',
+    'table',
+    '|',
+    'both',
+    'preview',
+    'format',
+    '|',
+    'devtools',
+    'fullscreen',
+    'info',
+    'help',
+  ]
+  let resizeEnable = true
+  if ($(window).width() < 768) {
+    toolbar = [
+      'emoji',
+      'line',
+      'quote',
+      'list',
+      'ordered-list',
+      'check',
+      'link',
+      'preview',
+      'format',
+      'info',
+      'help',
+    ]
+    resizeEnable = false
+  }
+
+  window.vditor = new Vditor('pipeEditorComment', {
+    tab: '\t',
+    placeholder: $('#pipeEditorComment').data('placeholder'),
+    height: 180,
+    esc: () => {
+      $('#pipeEditorCancel').click()
+    },
+    ctrlEnter: () => {
+      $('#pipeEditorAdd').click()
+    },
+    preview: {
+      delay: 500,
+      mode: 'editor',
+      url: `${$('#pipeEditorComment').data('blogurl')}/api/markdown`,
+      parse: (element) => {
+        if (element.style.display === 'none') {
+          return
+        }
+        LazyLoadImage()
+        LazyLoadCSSImage()
+        ParseHljs()
+      },
+    },
+    counter: 2048,
+    resize: {
+      enable: resizeEnable,
+      position: 'top',
+    },
+    lang: $('#pipeLang').data('lang'),
+    toolbar,
+  })
+}
 
 export const InitComment = () => {
   /**
@@ -130,8 +187,9 @@ export const InitComment = () => {
    */
   const _hideEditor = () => {
     const $editor = $('#pipeEditor')
-    $editor.css({'bottom': `-${$editor.outerHeight()}px`, 'opacity': 0})
-    $('body').css('padding-bottom', 0)
+
+    $editor.css(
+      {'bottom': `-${$editor.outerHeight()}px`, top: 'auto', 'opacity': 0})
   }
 
   // comment null reply
@@ -141,13 +199,13 @@ export const InitComment = () => {
   })
 
   // bottom reply
-  $('body').on('click', '#pipeCommentBottomComment', function () {
+  $('#pipeCommentsWrap').on('click', '#pipeCommentBottomComment', function () {
     const $bottomComment = $(this)
     ShowEditor($bottomComment.data('text'), $bottomComment.data('id'))
   })
 
   // comment show reply
-  $('body').on('click', '#pipeComments .fn-pointer', function () {
+  $('#pipeCommentsWrap').on('click', '#pipeComments .fn__pointer', function () {
     const $it = $(this)
     if ($it.hasClass('disabled')) {
       return
@@ -161,12 +219,13 @@ export const InitComment = () => {
           queue: false,
           complete: () => {
             $it.removeClass('disabled')
-          }
+          },
         })
         return
       }
       $.ajax({
-        url: `${$('#pipeEditorComment').data('blogurl')}/comments/${$it.data('id')}/replies`,
+        url: `${$('#pipeEditorComment').data('blogurl')}/comments/${$it.data(
+          'id')}/replies`,
         type: 'GET',
         success: (result) => {
           if (result.code === 0) {
@@ -179,9 +238,9 @@ export const InitComment = () => {
                        href="${item.Author.URL}">
                     </a>
                     <div class="pipe-comment__body">
-                        <a href="${item.Author.URL}" class="ft-gray">${item.Author.Name}</a>
-                        <span class="ft-nowrap ft-12 ft-gray"> • ${item.CreatedAt}</span>
-                        <div class="pipe-content__reset">
+                        <a href="${item.Author.URL}" class="ft__gray">${item.Author.Name}</a>
+                        <span class="ft__nowrap ft__12 ft__gray"> • ${item.CreatedAt}</span>
+                        <div class="vditor-reset">
                              ${item.Content}
                         </div>
                     </div>
@@ -191,17 +250,17 @@ export const InitComment = () => {
               queue: false,
               complete: () => {
                 $it.removeClass('disabled')
-              }
+              },
             })
             LazyLoadImage()
             LazyLoadCSSImage()
-            InitHljs()
+            ParseHljs()
             ParseMarkdown()
           } else {
             alert(result.msg)
             $it.removeClass('disabled')
           }
-        }
+        },
       })
     } else {
       $svg.addClass('pipe-comment__chevron-down')
@@ -209,120 +268,53 @@ export const InitComment = () => {
         queue: false,
         complete: () => {
           $it.removeClass('disabled')
-        }
+        },
       })
     }
-  });
+  })
 
   // comment remove
-  $('body').on('click', '#pipeComments .pipe-comment__btn--danger', function () {
-    const $it = $(this)
-    if (confirm($it.data('label'))) {
-      $.ajax({
-        url: `${$('#pipeEditorComment').data('blogurl')}/comments/${$it.data('id')}`,
-        type: 'DELETE',
-        success: (result) => {
-          if (result.code === 0) {
-            const $commentsCnt = $('#pipeCommentsCnt')
-            const $comments = $('#pipeComments')
-            const $item = $(`#pipeComment${$it.data('id')}`)
+  $('#pipeCommentsWrap').
+    on('click', '#pipeComments .pipe-comment__btn--danger', function () {
+      const $it = $(this)
+      if (confirm($it.data('label'))) {
+        $.ajax({
+          url: `${$('#pipeEditorComment').
+            data('blogurl')}/comments/${$it.data('id')}`,
+          type: 'DELETE',
+          success: (result) => {
+            if (result.code === 0) {
+              const $commentsCnt = $('#pipeCommentsCnt')
+              const $comments = $('#pipeComments')
+              const $item = $(`#pipeComment${$it.data('id')}`)
 
-            if ($('#pipeComments > div > section').length === 1) {
-              $comments.addClass('pipe-comment__null')
-                .html(`<svg><use xlink:href="#icon-reply"></use></svg>
+              if ($('#pipeComments > div > section').length === 1) {
+                $comments.addClass('pipe-comment__null').html(`<svg><use xlink:href="#icon-reply"></use></svg>
 ${$it.data('label2')}`).click(function () {
-                ShowEditor($comments.data('title'), $comments.data('id'))
-              })
+                  ShowEditor($comments.data('title'), $comments.data('id'))
+                })
+              } else {
+                $item.remove()
+                $commentsCnt.text(parseInt($commentsCnt.text()) - 1)
+              }
             } else {
-              $item.remove()
-              $commentsCnt.text(parseInt($commentsCnt.text()) - 1)
+              alert(result.msg)
             }
-          } else {
-            alert(result.msg)
-          }
-        }
-      })
-    }
-  })
+          },
+        })
+      }
+    })
 
   // comment reply
-  $('body').on('click', '#pipeComments .pipe-comment__btn--reply', function () {
-    const $it = $(this)
-    ShowEditor($it.data('title'), $it.data('id'), $it.data('commentid'))
-  })
+  $('#pipeCommentsWrap').
+    on('click', '#pipeComments .pipe-comment__btn--reply', function () {
+      const $it = $(this)
+      ShowEditor($it.data('title'), $it.data('id'), $it.data('commentid'))
+    })
 
   if ($('#pipeEditorComment').length === 0) {
-    return;
+    return
   }
-
-  // init Editor
-  const label = $('#pipeEditorComment').data('label').split(',')
-  const $b3logEditor = Editor({
-    id: 'pipeEditorComment',
-    placeholder: $('#pipeEditorComment').data('placeholder'),
-    tipClass: 'pipe-tooltipped pipe-tooltipped--e',
-    emojiURL: 'https://www.webpagefx.com/tools/emoji-cheat-sheet/',
-    label: {
-      emoji: label[0] + ' <ctrl+&frasl;>',
-      bold: label[1] + ' <ctrl+b>',
-      italic: label[2] + ' <ctrl+i>',
-      quote: label[3] + ' <ctrl+e>',
-      link: label[4] + ' <ctrl+k>',
-      upload: label[5],
-      unorderedList: label[6] + ' <ctrl+l>',
-      orderedList: label[7] + ' <ctrl+shift+l>',
-      view: label[8] + ' <ctrl+d>',
-      question: label[9],
-      fullscreen: label[10] + ' <ctrl+shift+a>',
-      emojiTip: 'EMOJI CHEAT SHEET'
-    },
-    height: 180,
-    keyup: (event) => {
-      localStorage.setItem('pipeEditorComment', event.target.value)
-    },
-    esc: _hideEditor,
-    ctrlEnter: () => {
-      $('#pipeEditorAdd').click();
-    },
-    hasView: false,
-    uploadURL: `${$('#pipeEditorComment').data('blogurl')}/upload`,
-    fetchUpload: (url, succCB) => {
-      $.ajax({
-        url: `${$('#pipeEditorComment').data('blogurl')}/fetch-upload`,
-        type: "POST",
-        data: JSON.stringify({
-          url
-        }),
-        success: function (result) {
-          succCB(result.data.originalURL, result.data.url)
-        }
-      });
-    },
-    previewClass: 'pipe-content__reset',
-    staticServePath: config.StaticServer || config.Server,
-    change: (value, $preview) => {
-      if ($.trim(value) === '' || !$preview) {
-        $preview && $preview.html('');
-        return;
-      }
-      $.ajax({
-        url: `${config.Server}/api/console/markdown`,
-        type: "POST",
-        data: JSON.stringify({
-          mdText: value
-        }),
-        success: function (result) {
-          $preview.html(result.data.html);
-          LazyLoadImage()
-          LazyLoadCSSImage()
-          InitHljs()
-          ParseMarkdown()
-        }
-      });
-    }
-  })
-
-  $b3logEditor.val(localStorage.getItem('pipeEditorComment'))
 
   // editor cancel
   $('#pipeEditorCancel').click(function () {
@@ -338,24 +330,24 @@ ${$it.data('label2')}`).click(function () {
     const $commentContent = $('#pipeEditorComment')
 
     if ($editorAdd.hasClass('disabled')) {
-      return;
+      return
     }
 
-    if ($.trim($b3logEditor.val()).length === 0) {
+    if ($.trim(vditor.getValue()).length === 0) {
       alert(label2)
-      return;
+      return
     }
 
     let requestData = {
       'articleID': $editor.data('id'),
-      'content': $b3logEditor.val()
+      'content': vditor.getValue(),
     }
 
     if ($editor.data('commentid')) {
       requestData.parentCommentID = $editor.data('commentid')
     }
 
-    $editorAdd.addClass('disabled')
+    $editorAdd.addClass('pipe-btn--disabled')
 
     $.ajax({
       url: `${$commentContent.data('blogurl')}/comments`,
@@ -368,10 +360,13 @@ ${$it.data('label2')}`).click(function () {
           const $comments = $('#pipeComments')
 
           if ($commentsCnt.length === 0) {
-            $comments.removeClass('pipe-comment__null').unbind('click')
-              .html(`<div class="pipe-comment__header"><span id="pipeCommentsCnt">1</span>${label}</div><div>${result.data}</div>
-<nav class="pipe-comment__pagination fn-clear">
-    <span class="fn-right pipe-comment__btn" data-text="${$comments.data('title')}" data-id="${$editor.data('id')}" id="pipeCommentBottomComment">
+            $comments.removeClass('pipe-comment__null').
+              unbind('click').
+              html(
+                `<div class="pipe-comment__header"><span id="pipeCommentsCnt">1</span>${label}</div><div>${result.data}</div>
+<nav class="pipe-comment__pagination fn__clear">
+    <span class="fn__right pipe-comment__btn" data-text="${$comments.data(
+                  'title')}" data-id="${$editor.data('id')}" id="pipeCommentBottomComment">
          <svg><use xlink:href="#icon-reply"></use></svg> ${label}
     </span>
 </nav>`)
@@ -381,21 +376,23 @@ ${$it.data('label2')}`).click(function () {
           }
 
           if ($(this).data('editable')) {
-            $('#pipeComments > div > section').last().find('.pipe-comment__btn--danger').removeClass('pipe-comment__btn--none')
+            $('#pipeComments > div > section').
+              last().
+              find('.pipe-comment__btn--danger').
+              removeClass('pipe-comment__btn--none')
           }
 
           LazyLoadCSSImage()
           LazyLoadImage()
           ParseMarkdown()
-          InitHljs()
+          ParseHljs()
 
-          $b3logEditor.val('')
-          localStorage.removeItem('pipeEditorComment')
+          vditor.setValue('')
         } else {
           alert(result.msg)
         }
-        $editorAdd.removeClass('disabled')
-      }
+        $editorAdd.removeClass('pipe-btn--disabled')
+      },
     })
   })
 }
